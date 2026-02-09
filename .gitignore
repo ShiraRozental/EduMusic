@@ -1,0 +1,19 @@
+## Visual Studio Build Outputs
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+
+## Visual Studio Metadata
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+## OS files
+Thumbs.db
+Desktop.ini
+
+# Configuration files
+appsettings.json
+appsettings.Development.json
