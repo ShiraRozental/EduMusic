@@ -23,6 +23,8 @@ namespace Repository.Entities
 
         public string RawLyrics { get; set; }
 
+        public int Duration { get; set; }
+
         public int CategoryID { get; set; }
         [ForeignKey("CategoryID")]
         public virtual Category Category { get; set; }
