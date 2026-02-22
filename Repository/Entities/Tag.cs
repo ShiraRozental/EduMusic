@@ -13,8 +13,10 @@ namespace Repository.Entities
         public int TagID { get; set; }
 
         [Required]
+        [StringLength(50)]
         public string TagText { get; set; }
 
         public virtual ICollection<SongTagFrequency> TagsFrequencies { get; set; }
     }
 }
+

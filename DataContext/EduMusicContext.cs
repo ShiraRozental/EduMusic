@@ -22,5 +22,27 @@ namespace EduMusic.DataContext
             await SaveChangesAsync();
         }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Song>()
+                .HasIndex(s => s.RawLyrics)
+                .HasDatabaseName("Index_Lyrics");
+
+            modelBuilder.Entity<Admin>()
+                .HasIndex(a => a.Email)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.ID)
+                .IsUnique();
+
+            modelBuilder.Entity<SongTagFrequency>()
+                .HasOne(st => st.Song)
+                .WithMany(s => s.TagsFrequencies)
+                .HasForeignKey(st => st.SongID)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
     }
 }

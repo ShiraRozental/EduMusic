@@ -17,6 +17,7 @@ namespace Repository.Entities
         [ForeignKey("TagID")]
         public virtual Tag Tag { get; set; }
 
+        [Range(1, int.MaxValue)]
         public int Frequency { get; set; }
     }
 }

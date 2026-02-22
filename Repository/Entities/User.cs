@@ -10,6 +10,7 @@ namespace Repository.Entities
         public int UserID { get; set; }
 
         [Required]
+        [RegularExpression(@"^\d{9}$", ErrorMessage = "Identity number must be exactly 9 digits")]
         public string ID { get; set; }
 
         public int MyTeacherID { get; set; }

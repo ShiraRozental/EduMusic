@@ -9,7 +9,8 @@ namespace Repository.Entities
         [Key]
         public int CategoryID { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Category name is required")]
+        [StringLength(50, MinimumLength = 2)]
         public string CategoryName { get; set; }
 
         public virtual ICollection<Song> Songs { get; set; }

@@ -14,13 +14,16 @@ namespace Repository.Entities
         public int SongID { get; set; }
 
         [Required]
+        [StringLength(150)]
         public string Title { get; set; }
 
+        [StringLength(100)]
         public string Artist { get; set; }
 
         [Required]
         public string FilePath { get; set; }
-
+        
+        [Required]
         public string RawLyrics { get; set; }
 
         public int Duration { get; set; }
