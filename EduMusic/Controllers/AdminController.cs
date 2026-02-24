@@ -36,12 +36,6 @@ namespace EduMusic.Controllers
         [HttpPost]
         public async Task<AdminDto> Post([FromBody] AdminDto admin)
         {
-            var path = Path.Combine(Environment.CurrentDirectory, "images/", admin.ImageFile.FileName);
-            using (FileStream fs = new FileStream(path, FileMode.Create))
-            {
-                admin.ImageFile.CopyTo(fs);
-                fs.Close();
-            }
             return await _service.AddItem(admin);
         }
 
