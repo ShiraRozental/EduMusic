@@ -9,48 +9,47 @@ using System.Threading.Tasks;
 
 namespace Repository.Repositories
 {
-    public class AdminRepository : IRepository<Admin>
+    public class AdminRepository(IContext _context) : IAdminRepository
     {
-
-        private readonly IContext ctx;
-        public AdminRepository(IContext context)
-        {
-            ctx = context;
-        }
 
         public async Task<Admin> AddItem(Admin admin)
         {
-            ctx.Admins.AddAsync(admin);
-            ctx.Save();
+            _context.Admins.AddAsync(admin);
+            _context.Save();
             return admin;
         }
         public async Task DeleteItem(int id)
         {
-            var deleteItem = await ctx.Admins.FirstOrDefaultAsync(x => x.AdminID == id);
-            ctx.Admins.Remove(deleteItem);
-            await ctx.Save();
+            var deleteItem = await _context.Admins.FirstOrDefaultAsync(x => x.AdminID == id);
+            _context.Admins.Remove(deleteItem);
+            await _context.Save();
         }
 
         public async Task<List<Admin>> GetAll()
         {
-            return await ctx.Admins.ToListAsync();
+            return await _context.Admins.ToListAsync();
         }
 
         public async Task<Admin> GetById(int id)
         {
-            return await ctx.Admins.FirstOrDefaultAsync(x => x.AdminID == id);
+            return await _context.Admins.FirstOrDefaultAsync(x => x.AdminID == id);
         }
 
         public async Task<Admin> UpdateItem(int id, Admin admin)
         {
-            var item = await ctx.Admins.FirstOrDefaultAsync(x => x.AdminID == id);
+            var item = await _context.Admins.FirstOrDefaultAsync(x => x.AdminID == id);
             item.ImageUrl = admin.ImageUrl;
             item.FullName = admin.FullName;
             item.Email = admin.Email;
             item.Password = admin.Password;
       
-            await ctx.Save();
+            await _context.Save();
             return item;
+        }
+
+        public async Task<Admin?> GetAdminByEmail(string email)
+        {
+            return await _context.Admins.FirstOrDefaultAsync(u => u.Email == email);
         }
 
     }

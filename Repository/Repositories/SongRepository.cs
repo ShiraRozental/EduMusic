@@ -5,40 +5,35 @@ using Repository.Interfaces;
 
 namespace Repository.Repositories
 {
-    public class SongRepository : IRepository<Song>
+    public class SongRepository( IContext _context) : ISongRepository
     {
-        private readonly IContext ctx;
-        public SongRepository(IContext context)
-        {
-            ctx = context;
-        }
 
         public async Task<Song> AddItem(Song song)
         {
-            ctx.Songs.AddAsync(song);
-            ctx.Save();
+            _context.Songs.AddAsync(song);
+            _context.Save();
             return song;
         }
         public async Task DeleteItem(int id)
         {
-            var deleteItem = await ctx.Songs.FirstOrDefaultAsync(x => x.SongID == id);
-            ctx.Songs.Remove(deleteItem);
-            await ctx.Save();
+            var deleteItem = await _context.Songs.FirstOrDefaultAsync(x => x.SongID == id);
+            _context.Songs.Remove(deleteItem);
+            await _context.Save();
         }
 
         public async Task<List<Song>> GetAll()
         {
-            return await ctx.Songs.ToListAsync();
+            return await _context.Songs.ToListAsync();
         }
 
         public async Task<Song> GetById(int id)
         {
-            return await ctx.Songs.FirstOrDefaultAsync(x => x.SongID == id);
+            return await _context.Songs.FirstOrDefaultAsync(x => x.SongID == id);
         }
 
         public async Task<Song> UpdateItem(int id, Song song)
         {
-            var item = await ctx.Songs.FirstOrDefaultAsync(x => x.SongID == id);
+            var item = await _context.Songs.FirstOrDefaultAsync(x => x.SongID == id);
             if (item == null) return null;
 
             item.Title = song.Title;
@@ -48,8 +43,33 @@ namespace Repository.Repositories
             item.UploaderID = song.UploaderID;
             item.CategoryID = song.CategoryID;
 
-            await ctx.Save();
+            await _context.Save();
             return item;
+        }
+
+        public async Task<Song?> GetSongWithDetails(int id) 
+        {             
+            return await _context.Songs
+                .AsNoTracking() 
+                .Include(s => s.Category)
+                .Include(s => s.Uploader)
+                .Include(s => s.TagsFrequencies) 
+                .ThenInclude(stf => stf.Tag)    
+                .FirstOrDefaultAsync(s => s.SongID == id);
+        }
+
+        public async Task<List<Song>> SearchSongs(string query)
+        {
+            return await _context.Songs
+                .Where(s => s.Title.Contains(query) || s.Artist.Contains(query) || s.RawLyrics.Contains(query) || s.Category.CategoryName.Contains(query))
+                .ToListAsync();
+        }
+
+        public async Task<List<Song>> GetSongsByCategory(int categoryId)
+        {
+            return await _context.Songs
+                .Where(s => s.CategoryID == categoryId)
+                .ToListAsync();
         }
     }
 }
