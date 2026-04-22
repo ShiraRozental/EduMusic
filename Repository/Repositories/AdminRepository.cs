@@ -14,9 +14,16 @@ namespace Repository.Repositories
 
         public async Task<Admin> AddItem(Admin admin)
         {
-            _context.Admins.AddAsync(admin);
-            _context.Save();
-            return admin;
+            try
+            {
+                await _context.Admins.AddAsync(admin);
+                await _context.Save();
+                return admin;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"ERROR DB: {ex.InnerException?.Message ?? ex.Message}");
+            }
         }
         public async Task DeleteItem(int id)
         {
