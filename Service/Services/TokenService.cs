@@ -20,7 +20,8 @@ namespace Service.Services
             new Claim(ClaimTypes.NameIdentifier, admin.AdminID.ToString()),
             new Claim(ClaimTypes.Email,           admin.Email),
             new Claim(ClaimTypes.Name,            admin.FullName),
-            new Claim(ClaimTypes.Role,            "Admin")   
+            new Claim(ClaimTypes.Role,            "Admin"),
+            new Claim("NationalID", admin.ID)
         };
             return BuildToken(claims, DateTime.UtcNow.AddMonths(1));
         }
@@ -30,6 +31,7 @@ namespace Service.Services
             var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+            new Claim(ClaimTypes.Name, user.FullNameUser),
             new Claim("NationalID",              user.ID),          
             new Claim("TeacherID",               user.MyTeacherID.ToString()),
             new Claim(ClaimTypes.Role,           "User")    

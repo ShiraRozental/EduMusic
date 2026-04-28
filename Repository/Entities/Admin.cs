@@ -8,6 +8,10 @@ namespace Repository.Entities
         [Key]
         public int AdminID { get; set; }
 
+        [Required]
+        [RegularExpression(@"^\d{9}$", ErrorMessage = "Identity number must be exactly 9 digits")]
+        public string ID { get; set; }
+
         [Required(ErrorMessage = "Email is required")]
         [EmailAddress(ErrorMessage = "Invalid Email Address")]
         [StringLength(100)]

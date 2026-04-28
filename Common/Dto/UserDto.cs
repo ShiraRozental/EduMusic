@@ -16,6 +16,9 @@ namespace Common.Dto
         public string ID { get; set; }
 
         [Required]
+        public string FullName { get; set; }
+
+        [Required]
         public int MyTeacherID { get; set; }
 
     }

@@ -13,6 +13,10 @@ namespace Repository.Entities
         [RegularExpression(@"^\d{9}$", ErrorMessage = "Identity number must be exactly 9 digits")]
         public string ID { get; set; }
 
+        [Required]
+        [StringLength(100, MinimumLength = 2)] 
+        public string FullNameUser { get; set; } 
+
         public int MyTeacherID { get; set; }
 
         [ForeignKey("MyTeacherID")]

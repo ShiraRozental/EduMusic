@@ -24,6 +24,9 @@ namespace Common.Dto
         [StringLength(50, MinimumLength = 2)]
         public string FullName { get; set; }
 
+        [Required]
+        public string ID { get; set; }
+
         public IFormFile? ImageFile { get; set; }
     }
 }

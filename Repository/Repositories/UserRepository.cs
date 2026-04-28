@@ -41,6 +41,7 @@ namespace Repository.Repositories
             var item = await _context.Users.FirstOrDefaultAsync(x => x.UserID == id);
             item.MyTeacherID = user.MyTeacherID;
             item.ID = user.ID;
+            item.FullNameUser = user.FullNameUser;
 
             await _context.Save();
             return item;

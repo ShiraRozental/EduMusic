@@ -49,6 +49,7 @@ namespace Repository.Repositories
             item.FullName = admin.FullName;
             item.Email = admin.Email;
             item.Password = admin.Password;
+            item.ID = admin.ID;
       
             await _context.Save();
             return item;
