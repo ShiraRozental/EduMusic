@@ -4,6 +4,7 @@ using Repository.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -33,9 +34,11 @@ namespace Repository.Repositories
             await ctx.Save();
         }
 
-        public async Task<List<Tag>> GetAll()
+        public async Task<List<Tag>> GetAll(Expression<Func<Tag, bool>> filter = null)
         {
-            return await ctx.Tags.ToListAsync();
+            IQueryable<Tag> query = ctx.Tags;
+            query = filter != null ? query.Where(filter) : query;
+            return await query.ToListAsync();
         }
 
         public async Task<Tag> GetById(int id)

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Service.Interfaces;
 using Repository.Repositories;
+using Common.Dto;
 
 
 namespace Service.Services
@@ -16,6 +17,7 @@ namespace Service.Services
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IAdminService, AdminService>();
 
             return services;
         }

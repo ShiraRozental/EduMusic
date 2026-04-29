@@ -28,8 +28,8 @@ namespace Service.Services
 
                     while (reader.Read())
                     {
-                        var id = reader.GetValue(0)?.ToString();
-                        var name = reader.GetValue(1)?.ToString();
+                        var id = reader.GetValue(1)?.ToString();
+                        var name = reader.GetValue(0)?.ToString();
 
                         if (!string.IsNullOrEmpty(id))
                         {

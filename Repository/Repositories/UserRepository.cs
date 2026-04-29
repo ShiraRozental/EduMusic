@@ -6,11 +6,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Repository.Repositories
 {
-    public class UserRepository(IContext _context) : IUserRepository
+    public class UserRepository(IContext context) : IUserRepository
     {
+        private readonly IContext _context = context;
         public async Task<User> AddItem(User user)
         {
             await _context.Users.AddAsync(user);
@@ -32,9 +34,11 @@ namespace Repository.Repositories
             await _context.Save();
         }
 
-        public async Task<List<User>> GetAll()
+        public async Task<List<User>> GetAll(Expression<Func<User, bool>> filter = null)
         {
-            return await _context.Users.ToListAsync();
+            IQueryable<User> query = _context.Users;
+            query = filter != null ? query.Where(filter) : query;
+            return await query.ToListAsync();
         }
        
         public async Task<User> GetById(int id)

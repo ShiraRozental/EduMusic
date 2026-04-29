@@ -1,6 +1,7 @@
 ﻿using Repository.Entities;
 using Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 
 namespace Repository.Repositories
@@ -26,9 +27,11 @@ namespace Repository.Repositories
             await ctx.Save();
         }
 
-        public async Task<List<Category>> GetAll()
+        public async Task<List<Category>> GetAll(Expression<Func<Category, bool>> filter = null)
         {
-            return await ctx.Categories.ToListAsync();
+            IQueryable<Category> query = ctx.Categories;
+            query = filter != null ? query.Where(filter) : query;
+            return await query.ToListAsync();
         }
 
         public async Task<Category> GetById(int id)

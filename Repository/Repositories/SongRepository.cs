@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Repository.Entities;
 using Repository.Interfaces;
+using System.Linq;
+using System.Linq.Expressions;
 
 
 namespace Repository.Repositories
@@ -21,9 +23,11 @@ namespace Repository.Repositories
             await _context.Save();
         }
 
-        public async Task<List<Song>> GetAll()
+        public async Task<List<Song>> GetAll(Expression<Func<Song, bool>> filter = null)
         {
-            return await _context.Songs.ToListAsync();
+            IQueryable<Song> query = _context.Songs;
+            query = filter != null ? query.Where(filter) : query;
+            return await query.ToListAsync();
         }
 
         public async Task<Song> GetById(int id)

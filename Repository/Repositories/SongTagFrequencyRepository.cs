@@ -1,17 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Repository.Entities;
 using Repository.Interfaces;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace Repository.Repositories
 {
-    public class SongTagFrequencyRepository : IRepository<SongTagFrequency>
+    public class SongTagFrequencyRepository(IContext context) : IRepository<SongTagFrequency>
     {
-        private readonly IContext ctx;
-        public SongTagFrequencyRepository(IContext context)
-        {
-            ctx = context;
-
-        }
+        private readonly IContext ctx = context;
+      
         public async Task<SongTagFrequency> AddItem(SongTagFrequency item)
         {
             await ctx.SongTagFrequencies.AddAsync(item);
@@ -27,9 +25,11 @@ namespace Repository.Repositories
             await ctx.Save();
         }
 
-        public async Task<List<SongTagFrequency>> GetAll()
+        public async Task<List<SongTagFrequency>> GetAll(Expression<Func<SongTagFrequency, bool>> filter = null)
         {
-            return await ctx.SongTagFrequencies.ToListAsync();
+            IQueryable<SongTagFrequency> query = ctx.SongTagFrequencies;
+            query = filter != null ? query.Where(filter) : query;
+            return await query.ToListAsync();
         }
 
         public async Task<SongTagFrequency> GetById(int id)

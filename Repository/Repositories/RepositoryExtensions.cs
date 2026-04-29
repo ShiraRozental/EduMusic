@@ -14,11 +14,11 @@ namespace Repository.Repositories
         public static IServiceCollection AddRepository(this IServiceCollection services)
         {
             services.AddScoped<IRepository<Category>, CategoryRepository>();
-            services.AddScoped<IRepository<Song>, SongRepository>();
+            services.AddScoped<ISongRepository, SongRepository>();
             services.AddScoped<IRepository<Tag>, TagRepository>();
             services.AddScoped<IRepository<SongTagFrequency>, SongTagFrequencyRepository>();
-            services.AddScoped<IRepository<User>, UserRepository>();
-            services.AddScoped<IRepository<Admin>, AdminRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IAdminRepository, AdminRepository>();
 
             return services;
         }

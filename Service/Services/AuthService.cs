@@ -5,10 +5,10 @@ using Repository.Interfaces;
 using Service.Interfaces;
 
 
-public class AuthService(IRepository<User> userRepo, IRepository<Admin> adminRepo, IMapper mapper, ITokenService tokenService) : IAuthService
+public class AuthService(IUserRepository userRepo, IAdminRepository adminRepo, IMapper mapper, ITokenService tokenService) : IAuthService
 {
-    private readonly IRepository<User> _userRepo = userRepo;
-    private readonly IRepository<Admin> _adminRepo = adminRepo;
+    private readonly IUserRepository _userRepo = userRepo;
+    private readonly IAdminRepository _adminRepo = adminRepo;
     private readonly IMapper _mapper = mapper;
     private readonly ITokenService _tokenService = tokenService;
 

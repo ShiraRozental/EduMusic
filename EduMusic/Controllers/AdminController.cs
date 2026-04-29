@@ -2,17 +2,17 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Service.Interfaces;
-using Service.Services;
 using System.Security.Claims;
 
 namespace EduMusic.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AdminController(IService<AdminDto> service) : ControllerBase
+    [Authorize(Roles = "Admin")]
+    public class AdminController(IAdminService service, IUserService userServ) : ControllerBase
     {
-        private readonly IService<AdminDto> _service = service;
-        private readonly IUserService _userService;
+        private readonly IAdminService _service = service;
+        private readonly IUserService _userService = userServ;
 
         [HttpPost("upload-users")]
         public async Task<IActionResult> UploadStudents(IFormFile file)
@@ -36,6 +36,7 @@ namespace EduMusic.Controllers
             }
         }
 
+        
         [HttpPost("add-multiple-manual")]
         public async Task<IActionResult> AddMultiple([FromBody] List<UserProvisioningDto> dtos)
         {
@@ -52,11 +53,12 @@ namespace EduMusic.Controllers
             }
         }
 
-        // GET: api/<AdminController>
-        [HttpGet]
-        public async Task<List<AdminDto>> Get()
+        // GET: api/Admin/5/users
+        [HttpGet("{teacherId}/users")]
+        public async Task<ActionResult<IEnumerable<UserProvisioningDto>>> GetUsers(int teacherId)
         {
-            return await _service.GetAll();
+            var users = await _service.GetUsersByTeacherId(teacherId);
+            return Ok(users);
         }
 
         // GET api/<AdminController>/5
@@ -66,25 +68,12 @@ namespace EduMusic.Controllers
             return await _service.GetById(id);
         }
 
-        // POST api/<AdminController>
-        [HttpPost]
-        public async Task<AdminDto> Post([FromBody] AdminDto admin)
-        {
-            return await _service.AddItem(admin);
-        }
-
         // PUT api/<AdminController>/5
         [HttpPut("{id}")]
-        public async Task<AdminDto> Put(int id, [FromBody] AdminDto admin)
+        public async Task<ActionResult<AdminDto>> Put(int id, [FromBody] AdminDto adminDto)
         {
-            return await _service.UpdateItem(id, admin);
-        }
-
-        // DELETE api/<AdminController>/5
-        [HttpDelete("{id}")]
-        public async Task Delete(int id)
-        {
-            await _service.DeleteItem(id);
+            var updatedAdmin = await _service.UpdateItem(id, adminDto);
+            return Ok(updatedAdmin);
         }
     }
 }
