@@ -10,5 +10,7 @@ namespace Repository.Interfaces
     public interface IUserRepository: IRepository<User>
     {
         Task<Admin?> GetAdminForUser(int userId);
+        Task AddUsersRangeAsync(IEnumerable<User> users);
+
     }
 }

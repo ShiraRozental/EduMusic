@@ -26,7 +26,5 @@ namespace Common.Dto
 
         [Required]
         public string ID { get; set; }
-
-        public IFormFile? ImageFile { get; set; }
     }
 }

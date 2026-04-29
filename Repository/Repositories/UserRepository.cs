@@ -18,6 +18,12 @@ namespace Repository.Repositories
             return user;
         }
 
+        public async Task AddUsersRangeAsync(IEnumerable<User> users)
+        {
+            await _context.Users.AddRangeAsync(users);
+            await _context.Save();
+        }
+
         public async Task DeleteItem(int id)
         {
             var item = await _context.Users.FirstOrDefaultAsync(x => x.UserID == id);
