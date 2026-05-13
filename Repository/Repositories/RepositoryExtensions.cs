@@ -19,6 +19,7 @@ namespace Repository.Repositories
             services.AddScoped<IRepository<SongTagFrequency>, SongTagFrequencyRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IAdminRepository, AdminRepository>();
+            services.AddScoped<IJobRepository, JobRepository>();
 
             return services;
         }

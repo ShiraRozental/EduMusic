@@ -15,6 +15,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+//connectionSQL
+var connectionString = builder.Configuration.GetConnectionString("database-home");
+
+builder.Services.AddDbContext<IContext, EduMusicContext>(options =>
+    options.UseSqlServer(connectionString));
 
 // TOKEN SWAGGER
 builder.Services.AddSwaggerGen(c =>
@@ -47,9 +52,13 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-//////////
-///
+
 builder.Services.AddServices();
+
+//Worker
+builder.Services.AddHostedService<EduMusic.Background.LyricsWorker>();
+builder.Services.AddHttpClient<IGroqApiClient, GroqApiClient>(client => { client.Timeout = TimeSpan.FromMinutes(10); });
+
 
 // JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -69,13 +78,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 
-//connectionSQL
-var connectionString = builder.Configuration.GetConnectionString("database-home");
-
-builder.Services.AddDbContext<IContext, EduMusicContext>(options =>
-    options.UseSqlServer(connectionString));
-
-///////////
 var app = builder.Build();
 app.UseMiddleware<EduMusic.Middlewares.ExceptionMiddleware>();
 
