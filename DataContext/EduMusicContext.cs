@@ -16,6 +16,7 @@ namespace EduMusic.DataContext
         public virtual DbSet<Tag> Tags { get; set; }
         public virtual DbSet<SongTagFrequency> SongTagFrequencies { get; set; }
         public virtual DbSet<Category> Categories { get; set; }
+        public virtual DbSet<JobState> Jobs { get; set; }
 
         public async Task Save()
         {
@@ -43,6 +44,10 @@ namespace EduMusic.DataContext
                 .WithMany(s => s.TagsFrequencies)
                 .HasForeignKey(st => st.SongID)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<JobState>()
+                .HasIndex(j => j.Status);
         }
+          
     }
 }
