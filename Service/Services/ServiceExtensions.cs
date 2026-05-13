@@ -19,6 +19,10 @@ namespace Service.Services
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAdminService, AdminService>();
 
+            services.AddScoped<ILyricsProcessor, LyricsProcessor>();
+            services.AddScoped<IVocalSeparatorService, VocalSeparatorService>();
+            //services.AddScoped<ILyricsClassifierService, LyricsClassifierService>();
+
             return services;
         }
     }
