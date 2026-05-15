@@ -13,6 +13,7 @@ namespace Repository.Entities
         SeparatingVocals,
         Transcribing,
         FixingLyrics,
+        NormalizingWords,
         Classifying,
         Completed,
         Failed

@@ -9,12 +9,17 @@ namespace Service.Interfaces
     public interface IVocalSeparatorService
     {
         /// <summary>
-        /// מפריד את הקול (Vocals) מתוך קובץ שמע ומחזיר את הנתיב לקובץ ה-WAV שנוצר.
+        /// Uploads an audio file, processes it to extract vocals, and saves the resulting WAV to a local temporary path.
         /// </summary>
         Task<string> SeparateVocalsAsync(string inputFilePath, CancellationToken ct = default);
 
         /// <summary>
-        /// מוחק את תיקיית הפלט הזמנית שנוצרה על ידי Demucs.
+        /// Requests the remote server to delete all temporary output files associated with a specific job ID.
+        /// </summary>
+        Task DeleteRemoteJobAsync(string jobId, CancellationToken ct = default);
+
+        /// <summary>
+        /// Deletes the local temporary WAV file created during the separation process.
         /// </summary>
         void CleanupOutput(string vocalsPath);
     }

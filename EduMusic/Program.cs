@@ -56,8 +56,11 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddServices();
 
 //Worker
+builder.Services.AddHttpClient<IGroqApiClient, GroqApiClient>(client => 
+{ 
+    client.Timeout = TimeSpan.FromMinutes(10); 
+});
 builder.Services.AddHostedService<EduMusic.Background.LyricsWorker>();
-builder.Services.AddHttpClient<IGroqApiClient, GroqApiClient>(client => { client.Timeout = TimeSpan.FromMinutes(10); });
 
 
 // JWT

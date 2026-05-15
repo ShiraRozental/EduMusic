@@ -19,9 +19,16 @@ namespace Service.Services
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAdminService, AdminService>();
 
+
+            // השארנו את ה-Processor ואת ה-VocalSeparator כשירותים רגילים
             services.AddScoped<ILyricsProcessor, LyricsProcessor>();
             services.AddScoped<IVocalSeparatorService, VocalSeparatorService>();
-            //services.AddScoped<ILyricsClassifierService, LyricsClassifierService>();
+
+            // הגדרת ה-HttpClient הייעודי עבור ה-Demucs API בשם שלו
+            services.AddHttpClient("DemucsApi", client =>
+            {
+                client.Timeout = TimeSpan.FromMinutes(5); // חשוב עבור פעולות הפרדה ארוכות
+            });
 
             return services;
         }

@@ -1,54 +1,44 @@
-﻿using Repository.Interfaces;
+﻿using Repository.Entities;
+using Repository.Interfaces;
 using Service.Interfaces;
 
 namespace EduMusic.Background;
 
 /// <summary>
-/// Background worker שרץ ברקע האפליקציה.
-/// הוא דוגם את מסד הנתונים כל כמה שניות ומחפש משימות חדשות בסטטוס Queued.
+/// Background worker that runs in the background of the application.
+/// It samples the database every few seconds and looks for new tasks in Queued status.
 /// </summary>
-public class LyricsWorker : BackgroundService
+public class LyricsWorker(IServiceProvider services, ILogger<LyricsWorker> logger, IConfiguration config) : BackgroundService
 {
-    private readonly IServiceProvider _services;
-    private readonly ILogger<LyricsWorker> _logger;
-    private readonly int _pollingDelayMilliseconds = 2000; // זמן המתנה בין בדיקות (2 שניות)
-
-    public LyricsWorker(
-        IServiceProvider services,
-        ILogger<LyricsWorker> logger,
-        IConfiguration config)
-    {
-        _services = services;
-        _logger = logger;
-        // ניתן להגדיר את זמן ההמתנה גם דרך ה-appsettings
-        _pollingDelayMilliseconds = config.GetValue("Worker:PollingDelayMs", 2000);
-    }
+    private readonly IServiceProvider _services = services;
+    private readonly ILogger<LyricsWorker> _logger = logger;
+    private readonly int _pollingDelayMilliseconds = config.GetValue("Worker:PollingDelayMs", 2000);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("LyricsWorker started and polling every {Delay}ms.", _pollingDelayMilliseconds);
 
-        // הלולאה הראשית שתרוץ כל עוד האפליקציה חיה
+        // The main loop that will run as long as the app is alive
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                // יצירת Scope חדש - קריטי לעבודה עם DbContext/Repositories בתוך Singleton
                 using (var scope = _services.CreateScope())
                 {
-                    // שליפת השירותים מתוך ה-Scope הנוכחי
+                    // Retrieve the services from the current scope
                     var jobRepo = scope.ServiceProvider.GetRequiredService<IJobRepository>();
                     var processor = scope.ServiceProvider.GetRequiredService<ILyricsProcessor>();
 
-                    // 1. בדיקה אם יש ג'וב שממתין בתור (סטטוס Queued)
+                    // 1. Check if there is a job waiting in the queue (Queued status)
                     var job = await jobRepo.GetNextQueuedJobAsync();
 
                     if (job != null)
                     {
+                        await jobRepo.UpdateStatusAsync(job.Id, JobStatus.SeparatingVocals);
+
                         _logger.LogInformation("Worker picked up job {JobId} ({FileName})", job.Id, job.OriginalFileName);
 
-                        // 2. הפעלת תהליך העיבוד (הפרדה, תמלול וכו')
-                        // הערה: ProcessAsync יעדכן בעצמו את הסטטוסים ב-DB דרך ה-JobRepo
+                        // 2. Running the processing process (separation, transcription, etc.)
                         await processor.ProcessAsync(job.Id, job.FilePath, stoppingToken);
                     }
                 }
@@ -58,7 +48,7 @@ public class LyricsWorker : BackgroundService
                 _logger.LogError(ex, "An error occurred in LyricsWorker loop.");
             }
 
-            // 3. המתנה לפני הבדיקה הבאה ב-DB
+            // 3. Waiting before the next DB check
             await Task.Delay(_pollingDelayMilliseconds, stoppingToken);
         }
 

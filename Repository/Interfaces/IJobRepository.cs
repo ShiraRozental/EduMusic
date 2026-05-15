@@ -8,5 +8,7 @@ namespace Repository.Interfaces
         Task UpdateStatusAsync(Guid jobId, JobStatus status, string? error = null);
         Task CompleteJobAsync(Guid jobId, string lyrics, string category);
         Task<JobState?> GetNextQueuedJobAsync();
+        Task AddJobAsync(JobState job);
+        Task<JobState?> GetByIdAsync(Guid id);
     }
 }
