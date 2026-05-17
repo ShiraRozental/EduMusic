@@ -20,6 +20,8 @@ namespace Repository.Repositories
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IAdminRepository, AdminRepository>();
             services.AddScoped<IJobRepository, JobRepository>();
+            services.AddScoped<ITagRepository, TagRepository>();
+            services.AddScoped<IClassificationRepository, ClassificationRepository>();
 
             return services;
         }

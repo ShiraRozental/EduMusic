@@ -52,6 +52,11 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// NLP Client
+builder.Services.AddHttpClient<INlpClientService, NlpClientService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["NlpService:BaseUrl"]!);
+});
 
 builder.Services.AddServices();
 
@@ -81,7 +86,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 
+
+
 var app = builder.Build();
+
+//CLASSIFICATION
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var cache = services.GetRequiredService<IClassificationDataCache>();
+        cache.Initialize(); 
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the cache.");
+    }
+}
+
+
 app.UseMiddleware<EduMusic.Middlewares.ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.

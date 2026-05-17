@@ -2,6 +2,7 @@
 using Service.Interfaces;
 using Repository.Repositories;
 using Common.Dto;
+using Repository.Interfaces;
 
 
 namespace Service.Services
@@ -18,17 +19,19 @@ namespace Service.Services
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IAdminService, AdminService>();
-
-
-            // השארנו את ה-Processor ואת ה-VocalSeparator כשירותים רגילים
+            services.AddScoped<IClassificationService, ClassificationService>();
             services.AddScoped<ILyricsProcessor, LyricsProcessor>();
-            services.AddScoped<IVocalSeparatorService, VocalSeparatorService>();
+            services.AddScoped<ITagService, TagService>();
 
-            // הגדרת ה-HttpClient הייעודי עבור ה-Demucs API בשם שלו
+            services.AddSingleton<IClassificationDataCache, ClassificationDataCache>();
+
+            // for Dmucs vocal separation and Groq API interactions
+            services.AddScoped<IVocalSeparatorService, VocalSeparatorService>();
             services.AddHttpClient("DemucsApi", client =>
             {
-                client.Timeout = TimeSpan.FromMinutes(5); // חשוב עבור פעולות הפרדה ארוכות
+                client.Timeout = TimeSpan.FromMinutes(5); 
             });
+
 
             return services;
         }

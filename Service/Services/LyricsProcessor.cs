@@ -5,23 +5,28 @@ using Service.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Service.Services
-{
-    public class LyricsProcessor(IVocalSeparatorService separator, IGroqApiClient groq,
-                               //ILyricsClassifierService classifier,
+namespace Service.Services;
+
+    public class LyricsProcessor(IVocalSeparatorService separator, 
+                                IGroqApiClient groq,
+                                IClassificationService classificationService,
                                 IJobRepository jobRepo,
-                               ILogger<LyricsProcessor> logger) : ILyricsProcessor
+                                ITagService tagService,
+                                ILogger<LyricsProcessor> logger,
+                                INlpClientService nlpClient): ILyricsProcessor
     {
         private readonly IVocalSeparatorService _separator = separator;
         private readonly IGroqApiClient _groq = groq;
-        //private readonly ILyricsClassifierService _classifier = classifier;
+        private readonly IClassificationService _classificationService = classificationService;
         private readonly IJobRepository _jobRepo = jobRepo;
+        private readonly ITagService _tagService = tagService;
         private readonly ILogger<LyricsProcessor> _logger = logger;
+        private readonly INlpClientService _nlpClient = nlpClient;
 
-   
 
         public async Task ProcessAsync(Guid jobId, string filePath, CancellationToken ct)
         {
@@ -32,11 +37,14 @@ namespace Service.Services
                 //await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SeparatingVocals);
                 //vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
                 vocalsPath = filePath;
-                //שלב 1
+
+
+                // Step 1: Transcribe audio using Groq Whisper API
                 await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Transcribing);
                 string rawLyrics = await _groq.TranscribeAsync(vocalsPath, "he", ct);
 
-                //שלב 2
+
+                // Step 2: Fix transcription and spelling errors using Groq LLM
                 await _jobRepo.UpdateStatusAsync(jobId, JobStatus.FixingLyrics);
                 string fixPrompt = """
                         אתה עורך שירים עבריים. תפקידך לתקן שגיאות כתיב ותמלול בלבד.
@@ -49,7 +57,7 @@ namespace Service.Services
                         """;
                 string cleanLyrics = await _groq.ChatAsync(fixPrompt, rawLyrics, ct);
 
-
+                /*
                 // שלב 3: נרמול מילים — קריאה נפרדת, מחזיר רשימה עם כפילויות
                 await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);
 
@@ -72,12 +80,23 @@ namespace Service.Services
                 List<string> allWords = ParseWordsJson(wordsJson);
 
                 List<string> normalizedWords = FilterStopwords(allWords);
+                */
 
+                // Step 3: Extract base words using the dedicated Python NLP service wrapper
+                await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);
+                Dictionary<string, int> wordCounts = await _nlpClient.NormalizeLyricsAsync(cleanLyrics, ct);
 
-                //await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Classifying);
-                //string category = await _classifier.ClassifyAsync(cleanLyrics, ct);
+                // Step 4: Clean and synchronize tags with the database via the dedicated tag service
+                await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SynchronizingTags);
+                Dictionary<Tag, int> finalTags = await _tagService.ProcessAndSyncTagsAsync(wordCounts);
 
-                //await _jobRepo.CompleteJobAsync(jobId, cleanLyrics, category);
+                // Step 5: Classify the song into its statistical category
+                await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Classifying);
+                var category = _classificationService.PredictCategory(finalTags);
+
+                // Step 6: Complete the background job and save the results
+                string categoryName = category?.CategoryName ?? "Unknown";
+                await _jobRepo.CompleteJobAsync(jobId, cleanLyrics, categoryName);
             }
             catch (Exception ex)
             {
@@ -150,4 +169,4 @@ namespace Service.Services
                 .ToList();
         }
     }
-}
+

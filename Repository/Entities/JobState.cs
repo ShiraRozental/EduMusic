@@ -14,6 +14,7 @@ namespace Repository.Entities
         Transcribing,
         FixingLyrics,
         NormalizingWords,
+        SynchronizingTags,
         Classifying,
         Completed,
         Failed
