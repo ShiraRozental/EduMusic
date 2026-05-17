@@ -21,8 +21,11 @@ namespace Repository.Repositories
         public async Task DeleteItem(int id)
         {
             var item = await ctx.SongTagFrequencies.FirstOrDefaultAsync(x => x.FrequencyID == id);
-            ctx.SongTagFrequencies.Remove(item);
-            await ctx.Save();
+            if (item != null)
+            {
+                ctx.SongTagFrequencies.Remove(item);
+                await ctx.Save();
+            }   
         }
 
         public async Task<List<SongTagFrequency>> GetAll(Expression<Func<SongTagFrequency, bool>> filter = null)
@@ -32,14 +35,15 @@ namespace Repository.Repositories
             return await query.ToListAsync();
         }
 
-        public async Task<SongTagFrequency> GetById(int id)
+        public async Task<SongTagFrequency?> GetById(int id)
         {
             return await ctx.SongTagFrequencies.FirstOrDefaultAsync(x => x.FrequencyID == id);
         }
 
-        public async Task<SongTagFrequency> UpdateItem(int id, SongTagFrequency songTagFrequency)
+        public async Task<SongTagFrequency?> UpdateItem(int id, SongTagFrequency songTagFrequency)
         {
             var item = await ctx.SongTagFrequencies.FirstOrDefaultAsync(x => x.FrequencyID == id);
+            if (item == null) return null;
             item.Frequency = songTagFrequency.Frequency;
             item.SongID = songTagFrequency.SongID;
             item.TagID = songTagFrequency.TagID;

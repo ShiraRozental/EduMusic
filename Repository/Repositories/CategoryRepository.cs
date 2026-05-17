@@ -16,15 +16,18 @@ namespace Repository.Repositories
 
         public async Task<Category> AddItem(Category category)
         {
-            ctx.Categories.AddAsync(category);
-            ctx.Save();
+            await ctx.Categories.AddAsync(category);
+            await ctx.Save();
             return category;
         }
         public async Task DeleteItem(int id)
         {
             var deleteItem = await ctx.Categories.FirstOrDefaultAsync(x => x.CategoryID == id);
-            ctx.Categories.Remove(deleteItem);
-            await ctx.Save();
+            if (deleteItem != null)
+            {
+                ctx.Categories.Remove(deleteItem);
+                await ctx.Save();
+            }
         }
 
         public async Task<List<Category>> GetAll(Expression<Func<Category, bool>> filter = null)
@@ -34,7 +37,7 @@ namespace Repository.Repositories
             return await query.ToListAsync();
         }
 
-        public async Task<Category> GetById(int id)
+        public async Task<Category?> GetById(int id)
         {
             return await ctx.Categories.FirstOrDefaultAsync(x => x.CategoryID == id);
         }

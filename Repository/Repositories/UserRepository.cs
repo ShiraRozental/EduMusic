@@ -41,14 +41,15 @@ namespace Repository.Repositories
             return await query.ToListAsync();
         }
        
-        public async Task<User> GetById(int id)
+        public async Task<User?> GetById(int id)
         {
             return await _context.Users.FirstOrDefaultAsync(x => x.UserID == id);
         }
 
-        public async Task<User> UpdateItem(int id, User user)
+        public async Task<User?> UpdateItem(int id, User user)
         {
             var item = await _context.Users.FirstOrDefaultAsync(x => x.UserID == id);
+            if (item == null) return null;
             item.MyTeacherID = user.MyTeacherID;
             item.ID = user.ID;
             item.FullNameUser = user.FullNameUser;

@@ -29,8 +29,12 @@ namespace Repository.Repositories
         public async Task DeleteItem(int id)
         {
             var deleteItem = await _context.Admins.FirstOrDefaultAsync(x => x.AdminID == id);
-            _context.Admins.Remove(deleteItem);
-            await _context.Save();
+            if (deleteItem != null)
+            {
+                _context.Admins.Remove(deleteItem);
+                await _context.Save();
+            }
+           
         }
 
         public async Task<List<Admin>> GetAll(Expression<Func<User, bool>> filter = null)
@@ -44,7 +48,7 @@ namespace Repository.Repositories
             return await query.ToListAsync();
         }
 
-        public async Task<Admin> GetById(int id)
+        public async Task<Admin?> GetById(int id)
         {
             return await _context.Admins.FirstOrDefaultAsync(x => x.AdminID == id);
         }

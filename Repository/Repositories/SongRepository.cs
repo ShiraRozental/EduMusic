@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Repository.Entities;
 using Repository.Interfaces;
-using System.Linq;
 using System.Linq.Expressions;
 
 
@@ -12,15 +11,18 @@ namespace Repository.Repositories
 
         public async Task<Song> AddItem(Song song)
         {
-            _context.Songs.AddAsync(song);
-            _context.Save();
+            await _context.Songs.AddAsync(song);
+            await _context.Save();
             return song;
         }
         public async Task DeleteItem(int id)
         {
             var deleteItem = await _context.Songs.FirstOrDefaultAsync(x => x.SongID == id);
-            _context.Songs.Remove(deleteItem);
-            await _context.Save();
+            if (deleteItem != null)
+            { 
+                _context.Songs.Remove(deleteItem);
+                await _context.Save();
+            }
         }
 
         public async Task<List<Song>> GetAll(Expression<Func<Song, bool>> filter = null)
@@ -30,7 +32,7 @@ namespace Repository.Repositories
             return await query.ToListAsync();
         }
 
-        public async Task<Song> GetById(int id)
+        public async Task<Song?> GetById(int id)
         {
             return await _context.Songs.FirstOrDefaultAsync(x => x.SongID == id);
         }
