@@ -8,6 +8,6 @@ namespace Service.Interfaces
 {
     public interface ILyricsProcessor
     {
-        Task ProcessAsync(Guid jobId, string filePath, CancellationToken ct);
+        Task ProcessAsync(Guid jobId, CancellationToken ct);
     }
 }

@@ -4,6 +4,7 @@ using EduMusic.DataContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataContext.Migrations
 {
     [DbContext(typeof(EduMusicContext))]
-    partial class EduMusicContextModelSnapshot : ModelSnapshot
+    [Migration("20260519200742_AddSongStatusAndUploadDate")]
+    partial class AddSongStatusAndUploadDate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -84,6 +87,10 @@ namespace DataContext.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Category")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
 
@@ -94,15 +101,22 @@ namespace DataContext.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<int>("SongID")
-                        .HasColumnType("int");
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Lyrics")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("SongID");
 
                     b.HasIndex("Status");
 
@@ -133,10 +147,12 @@ namespace DataContext.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RawLyrics")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -235,17 +251,6 @@ namespace DataContext.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Repository.Entities.JobState", b =>
-                {
-                    b.HasOne("Repository.Entities.Song", "Song")
-                        .WithMany("Jobs")
-                        .HasForeignKey("SongID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Song");
-                });
-
             modelBuilder.Entity("Repository.Entities.Song", b =>
                 {
                     b.HasOne("Repository.Entities.Category", "Category")
@@ -307,8 +312,6 @@ namespace DataContext.Migrations
 
             modelBuilder.Entity("Repository.Entities.Song", b =>
                 {
-                    b.Navigation("Jobs");
-
                     b.Navigation("TagsFrequencies");
                 });
 

@@ -40,12 +40,16 @@ public class ClassificationDataCache(IServiceScopeFactory scopeFactory) : IClass
             // 3. Construct the nested cache dictionary using frequencies loaded from the repository
             var frequencies = repository.GetSongTagFrequencies();
             CategoryTagCounts = frequencies
-                .GroupBy(stf => stf.Song.CategoryID)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.GroupBy(stf => stf.TagID)
-                          .ToDictionary(tg => tg.Key, tg => tg.Sum(stf => stf.Frequency))
-                );
+            .AsEnumerable() 
+            .GroupBy(stf => stf.Song?.CategoryID ?? 0) 
+            .ToDictionary(
+                g => g.Key, 
+                g => g.GroupBy(stf => stf.TagID)
+                      .ToDictionary(
+                          tg => tg.Key,
+                          tg => tg.Sum(stf => stf.Frequency)
+                      )
+            );
         }
         
     }

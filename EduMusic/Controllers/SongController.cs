@@ -1,22 +1,25 @@
 ﻿using Common.Dto;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Service.Interfaces;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using System.Security.Claims;
 
 namespace EduMusic.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SongController : ControllerBase
+    public class SongController(ISongService songService) : ControllerBase
     {
-        private readonly IService<SongDto> _service;
 
-        public SongController( IService<SongDto> service) 
+        [HttpPost("upload")]
+        [Authorize]
+        public async Task<IActionResult> Upload([FromForm] SongUploadDto dto)
         {
-            _service = service;
+            int uploaderId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var song = await songService.UploadAndSaveSongAsync(dto, uploaderId);
+            return Ok(new { song.SongID, song.Title, song.Status });
         }
-
+        /*
         // GET: api/<SongController>
         [HttpGet]
         public async Task<List<SongDto>> Get()
@@ -50,5 +53,6 @@ namespace EduMusic.Controllers
         public void Delete(int id)
         {
         }
+        */
     }
 }

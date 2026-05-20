@@ -11,42 +11,50 @@ using System.Threading.Tasks;
 
 namespace Service.Services;
 
-    public class LyricsProcessor(IVocalSeparatorService separator, 
-                                IGroqApiClient groq,
-                                IClassificationService classificationService,
-                                IJobRepository jobRepo,
-                                ITagService tagService,
-                                ILogger<LyricsProcessor> logger,
-                                INlpClientService nlpClient): ILyricsProcessor
+public class LyricsProcessor(IVocalSeparatorService separator,
+                            IGroqApiClient groq,
+                            IClassificationService classificationService,
+                            IJobRepository jobRepo,
+                            ITagService tagService,
+                            ILogger<LyricsProcessor> logger,
+                            INlpClientService nlpClient,
+                            ISongRepository songRepo) : ILyricsProcessor
+{
+    private readonly IVocalSeparatorService _separator = separator;
+    private readonly IGroqApiClient _groq = groq;
+    private readonly IClassificationService _classificationService = classificationService;
+    private readonly IJobRepository _jobRepo = jobRepo;
+    private readonly ITagService _tagService = tagService;
+    private readonly ILogger<LyricsProcessor> _logger = logger;
+    private readonly INlpClientService _nlpClient = nlpClient;
+    private readonly ISongRepository _songRepo = songRepo;
+
+
+    public async Task ProcessAsync(Guid jobId, CancellationToken ct)
     {
-        private readonly IVocalSeparatorService _separator = separator;
-        private readonly IGroqApiClient _groq = groq;
-        private readonly IClassificationService _classificationService = classificationService;
-        private readonly IJobRepository _jobRepo = jobRepo;
-        private readonly ITagService _tagService = tagService;
-        private readonly ILogger<LyricsProcessor> _logger = logger;
-        private readonly INlpClientService _nlpClient = nlpClient;
-
-
-        public async Task ProcessAsync(Guid jobId, string filePath, CancellationToken ct)
+        var job = await _jobRepo.GetByIdAsync(jobId); // שולף job + Song + FilePath
+        if (job == null) throw new Exception($"Job {jobId} not found");
+        string filePath = job.Song.FilePath;
+        string? vocalsPath = null;
+        try
         {
-            string? vocalsPath = null;
-            try
-            {
-                //the demucs python server
-                //await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SeparatingVocals);
-                //vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
-                vocalsPath = filePath;
+            
+
+            //the demucs python server
+            //await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SeparatingVocals);
+            //vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
+
+           
 
 
-                // Step 1: Transcribe audio using Groq Whisper API
-                await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Transcribing);
-                string rawLyrics = await _groq.TranscribeAsync(vocalsPath, "he", ct);
+            // Step 1: Transcribe audio using Groq Whisper API
+            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Transcribing);
+            string rawLyrics = await _groq.TranscribeAsync(vocalsPath, "he", ct);
 
 
-                // Step 2: Fix transcription and spelling errors using Groq LLM
-                await _jobRepo.UpdateStatusAsync(jobId, JobStatus.FixingLyrics);
-                string fixPrompt = """
+            // Step 2: Fix transcription and spelling errors using Groq LLM
+            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.FixingLyrics);
+            string fixPrompt = """
                         אתה עורך שירים עבריים. תפקידך לתקן שגיאות כתיב ותמלול בלבד.
                         חוקים מחייבים:
                         1. החזר את השיר המלא - כולל כל החזרות, כל הפזמונים, כל הבתים, בדיוק כמו המקור
@@ -55,93 +63,98 @@ namespace Service.Services;
                         4. שמור על מבנה שורות השיר המקורי
                         5. החזר את הטקסט בלבד, ללא הסברים
                         """;
-                string cleanLyrics = await _groq.ChatAsync(fixPrompt, rawLyrics, ct);
+            string cleanLyrics = await _groq.ChatAsync(fixPrompt, rawLyrics, ct);
 
-                /*
-                // שלב 3: נרמול מילים — קריאה נפרדת, מחזיר רשימה עם כפילויות
-                await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);
+            /*
+            // שלב 3: נרמול מילים — קריאה נפרדת, מחזיר רשימה עם כפילויות
+            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);
 
-                string normalizePrompt = """
-                    אתה כלי המרה מורפולוגי לעברית. עבור כל מילה בטקסט:
-                    - החזר את צורתה הבסיסית (לֶמָה)
-                    - רבים → יחיד: ילדים → ילד
-                    - פועל מוטה → שם פועל: ישנתי → לישון, מאיר → להאיר
-                    - נסמך → בסיסי: ביתו → בית, שלי → של (השאר כמו שהיא)
-    
-                    חובה:
-                    - עבד כל מילה בטקסט, ללא דילוג
-                    - הסר תחיליות דבוקות (ו,ב,ל,כ,מ,ש,ה) מכל מילה לפני הנרמול
-                    - שמור על סדר המילים המקורי
-                    - שמור כפילויות (מילה שחוזרת תופיע שוב)
-                    - החזר JSON בלבד בפורמט: {"words": ["מילה1","מילה2",...]}
-                    - אסור להשמיט מילים — גם מילות קישור, גם קריאות, גם כינויי גוף
-                    """;
-                string wordsJson = await _groq.ChatAsync(normalizePrompt, cleanLyrics, ct);
-                List<string> allWords = ParseWordsJson(wordsJson);
+            string normalizePrompt = """
+                אתה כלי המרה מורפולוגי לעברית. עבור כל מילה בטקסט:
+                - החזר את צורתה הבסיסית (לֶמָה)
+                - רבים → יחיד: ילדים → ילד
+                - פועל מוטה → שם פועל: ישנתי → לישון, מאיר → להאיר
+                - נסמך → בסיסי: ביתו → בית, שלי → של (השאר כמו שהיא)
 
-                List<string> normalizedWords = FilterStopwords(allWords);
-                */
+                חובה:
+                - עבד כל מילה בטקסט, ללא דילוג
+                - הסר תחיליות דבוקות (ו,ב,ל,כ,מ,ש,ה) מכל מילה לפני הנרמול
+                - שמור על סדר המילים המקורי
+                - שמור כפילויות (מילה שחוזרת תופיע שוב)
+                - החזר JSON בלבד בפורמט: {"words": ["מילה1","מילה2",...]}
+                - אסור להשמיט מילים — גם מילות קישור, גם קריאות, גם כינויי גוף
+                """;
+            string wordsJson = await _groq.ChatAsync(normalizePrompt, cleanLyrics, ct);
+            List<string> allWords = ParseWordsJson(wordsJson);
 
-                // Step 3: Extract base words using the dedicated Python NLP service wrapper
-                await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);
-                Dictionary<string, int> wordCounts = await _nlpClient.NormalizeLyricsAsync(cleanLyrics, ct);
+            List<string> normalizedWords = FilterStopwords(allWords);
+            */
 
-                // Step 4: Clean and synchronize tags with the database via the dedicated tag service
-                await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SynchronizingTags);
-                Dictionary<Tag, int> finalTags = await _tagService.ProcessAndSyncTagsAsync(wordCounts);
+            // Step 3: Extract base words using the dedicated Python NLP service wrapper
+            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);
+            Dictionary<string, int> wordCounts = await _nlpClient.NormalizeLyricsAsync(cleanLyrics, ct);
 
-                // Step 5: Classify the song into its statistical category
-                await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Classifying);
-                var category = _classificationService.PredictCategory(finalTags);
+            // Step 4: Clean and synchronize tags with the database via the dedicated tag service
+            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SynchronizingTags);
+            Dictionary<Tag, int> finalTags = await _tagService.ProcessAndSyncTagsAsync(wordCounts);
 
-                // Step 6: Complete the background job and save the results
-                string categoryName = category?.CategoryName ?? "Unknown";
-                await _jobRepo.CompleteJobAsync(jobId, cleanLyrics, categoryName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed job {Id}", jobId);
-                await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Failed, ex.Message);
-            }
-            finally
-            {
-                TryDeleteFile(filePath);
-                if (vocalsPath != null) _separator.CleanupOutput(vocalsPath);
-            }
+            // Step 5: Classify the song into its statistical category
+            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Classifying);
+            var category = _classificationService.PredictCategory(finalTags);
+
+            // Step 6: Complete the background job and save the results
+
+            string categoryName = category?.CategoryName ?? "Unknown";
+            int? categoryId = category?.CategoryID;
+
+            await _jobRepo.CompleteJobAsync(jobId);
+            await _songRepo.UpdateSongResultAsync(job.SongID, cleanLyrics, categoryId);
+
         }
-
-        private void TryDeleteFile(string path)
+        catch (Exception ex)
         {
-            try { if (File.Exists(path)) File.Delete(path); }
-            catch (Exception ex) { _logger.LogWarning(ex, "Could not delete {Path}", path); }
+            _logger.LogError(ex, "Failed job {Id}", jobId);
+            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Failed, ex.Message);
         }
-
-        private List<string> ParseWordsJson(string json)
+        finally
         {
-            try
-            {
-                string cleaned = System.Text.RegularExpressions.Regex.Replace(
-                    json, @"```json?|```", "").Trim();
-
-                using var doc = System.Text.Json.JsonDocument.Parse(cleaned);
-                return doc.RootElement
-                          .GetProperty("words")
-                          .EnumerateArray()
-                          .Select(e => e.GetString() ?? "")
-                          .Where(w => !string.IsNullOrWhiteSpace(w))
-                          .ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to parse words JSON: {Json}", json);
-                return [];
-            }
+            TryDeleteFile(filePath);
+            if (vocalsPath != null) _separator.CleanupOutput(vocalsPath);
         }
+    }
 
-        private static readonly HashSet<string> HebrewStopwords =
+    private void TryDeleteFile(string path)
+    {
+        try { if (File.Exists(path)) File.Delete(path); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not delete {Path}", path); }
+    }
+
+    private List<string> ParseWordsJson(string json)
+    {
+        try
+        {
+            string cleaned = System.Text.RegularExpressions.Regex.Replace(
+                json, @"```json?|```", "").Trim();
+
+            using var doc = System.Text.Json.JsonDocument.Parse(cleaned);
+            return doc.RootElement
+                      .GetProperty("words")
+                      .EnumerateArray()
+                      .Select(e => e.GetString() ?? "")
+                      .Where(w => !string.IsNullOrWhiteSpace(w))
+                      .ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse words JSON: {Json}", json);
+            return [];
+        }
+    }
+
+    private static readonly HashSet<string> HebrewStopwords =
 [
-            // מילות יחס
-            "של", "את", "עם", "על", "אל", "מן", "מ", "ל", "ב", "כ",
+        // מילות יחס
+        "של", "את", "עם", "על", "אל", "מן", "מ", "ל", "ב", "כ",
             "לפי", "בגלל", "כדי", "בשביל", "אחרי", "לפני", "בין", "אצל",
             // מילות חיבור
             "כי", "אבל", "או", "גם", "רק", "אם", "כש", "כאשר", "אז",
@@ -159,14 +172,14 @@ namespace Service.Services;
             "איי", "הא", "אהה", "ממ", "אממ",
 ];
 
-        private static List<string> FilterStopwords(List<string> words)
-        {
-            return words
-                .Where(w => !string.IsNullOrWhiteSpace(w))
-                .Where(w => w.Length > 1)                          // מסנן אותיות בודדות
-                .Where(w => !HebrewStopwords.Contains(w))          // מסנן stopwords
-                .Where(w => System.Text.RegularExpressions.Regex.IsMatch(w, @"[\u0590-\u05FF]")) // רק מילים עם עברית
-                .ToList();
-        }
+    private static List<string> FilterStopwords(List<string> words)
+    {
+        return words
+            .Where(w => !string.IsNullOrWhiteSpace(w))
+            .Where(w => w.Length > 1)                          // מסנן אותיות בודדות
+            .Where(w => !HebrewStopwords.Contains(w))          // מסנן stopwords
+            .Where(w => System.Text.RegularExpressions.Regex.IsMatch(w, @"[\u0590-\u05FF]")) // רק מילים עם עברית
+            .ToList();
     }
+}
 

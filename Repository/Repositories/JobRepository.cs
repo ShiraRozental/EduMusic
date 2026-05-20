@@ -24,13 +24,11 @@ namespace Repository.Repositories
             }
         }
 
-        public async Task CompleteJobAsync(Guid jobId, string lyrics, string category)
+        public async Task CompleteJobAsync(Guid jobId)
         {
             var job = await _context.Jobs.FindAsync(jobId);
             if (job != null)
             {
-                job.Lyrics = lyrics;
-                job.Category = category;
                 job.Status = JobStatus.Completed;
                 job.CompletedAt = DateTime.UtcNow;
                 await _context.Save();

@@ -8,6 +8,15 @@ using System.Threading.Tasks;
 
 namespace Repository.Entities
 {
+    public enum SongStatus
+    {
+        Pending,          
+        ExtractingLyrics, 
+        Classifying,      
+        Ready,            
+        Failed            
+    }
+
     public class Song
     {
         [Key]
@@ -23,12 +32,14 @@ namespace Repository.Entities
         [Required]
         public string FilePath { get; set; }
         
-        [Required]
-        public string RawLyrics { get; set; }
+        public string? RawLyrics { get; set; }
 
         public int Duration { get; set; }
+        public SongStatus Status { get; set; } = SongStatus.Pending;
+        public DateTime UploadDate { get; set; }
 
-        public int CategoryID { get; set; }
+
+        public int? CategoryID { get; set; }
         [ForeignKey("CategoryID")]
         public virtual Category Category { get; set; }
 
@@ -36,6 +47,7 @@ namespace Repository.Entities
         [ForeignKey("UploaderID")]
         public virtual Admin Uploader { get; set; }
 
+        public virtual ICollection<JobState> Jobs { get; set; }
 
         public virtual ICollection<SongTagFrequency> TagsFrequencies { get; set; }
 

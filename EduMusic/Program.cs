@@ -89,6 +89,8 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 
 
 var app = builder.Build();
+//WWWROOT
+app.UseStaticFiles();
 
 //CLASSIFICATION
 using (var scope = app.Services.CreateScope())

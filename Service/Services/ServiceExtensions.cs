@@ -22,6 +22,7 @@ namespace Service.Services
             services.AddScoped<IClassificationService, ClassificationService>();
             services.AddScoped<ILyricsProcessor, LyricsProcessor>();
             services.AddScoped<ITagService, TagService>();
+            services.AddScoped<ISongService, SongService>();
 
             services.AddSingleton<IClassificationDataCache, ClassificationDataCache>();
 

@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 
 namespace Common.Dto
 {
-    public class SongCreateDto
+    public class SongUploadDto
     {
         [Required]
         public IFormFile SongFile { get; set; }
@@ -17,5 +11,6 @@ namespace Common.Dto
         public string? Title { get; set; }
 
         public string? Artist { get; set; }
+
     }
 }

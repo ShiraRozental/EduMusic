@@ -8,7 +8,17 @@ namespace Repository.Repositories
 {
     public class SongRepository( IContext _context) : ISongRepository
     {
-
+        public async Task UpdateSongResultAsync(int songId, string lyrics, int? categoryId)
+        {
+            var song = await _context.Songs.FindAsync(songId);
+            if (song != null)
+            {
+                song.RawLyrics = lyrics;
+                song.CategoryID = categoryId;
+                song.Status = SongStatus.Ready;
+                await _context.Save();
+            }
+        }
         public async Task<Song> AddItem(Song song)
         {
             await _context.Songs.AddAsync(song);

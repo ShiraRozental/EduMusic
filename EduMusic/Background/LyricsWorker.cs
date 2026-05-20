@@ -36,10 +36,10 @@ public class LyricsWorker(IServiceProvider services, ILogger<LyricsWorker> logge
                     {
                         await jobRepo.UpdateStatusAsync(job.Id, JobStatus.SeparatingVocals);
 
-                        _logger.LogInformation("Worker picked up job {JobId} ({FileName})", job.Id, job.OriginalFileName);
+                        _logger.LogInformation("Worker picked up job {JobId}", job.Id);
 
                         // 2. Running the processing process (separation, transcription, etc.)
-                        await processor.ProcessAsync(job.Id, job.FilePath, stoppingToken);
+                        await processor.ProcessAsync(job.Id, stoppingToken);
                     }
                 }
             }
