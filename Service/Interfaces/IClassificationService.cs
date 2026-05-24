@@ -7,6 +7,6 @@ namespace Service.Interfaces
     /// </summary>
     public interface IClassificationService
     {
-        Category PredictCategory(Dictionary<Tag, int> songTags);
+        Category? PredictCategory(Dictionary<Tag, int> songTags, int adminId);
     }
 }

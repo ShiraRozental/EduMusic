@@ -12,12 +12,25 @@ public class ClassificationRepository(IContext context) : IClassificationReposit
     /// <summary>
     /// Retrieves all categories from the database, including their related songs.
     /// </summary>
-    public List<Category> GetAllCategoriesWithSongs()
+    public List<Category> GetAllCategories()
     {
         return context.Categories
-            .Include(c => c.Songs)
+            //.Include(c => c.Songs)
             .AsNoTracking()
             .ToList();
+    }
+
+    /// <summary>
+    /// Returns how many songs (system-wide) belong to each category.
+    /// Used to compute the prior probability P(Category).
+    /// Structure: CategoryID → song count
+    /// </summary>
+    public Dictionary<int, int> GetSongsCountPerCategory()
+    {
+        return context.Songs
+            .Where(s => s.CategoryID != null)
+            .GroupBy(s => s.CategoryID!.Value)
+            .ToDictionary(g => g.Key, g => g.Count());
     }
 
     /// <summary>

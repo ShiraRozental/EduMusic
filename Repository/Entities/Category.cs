@@ -1,5 +1,6 @@
 ﻿
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 
 namespace Repository.Entities
@@ -12,8 +13,9 @@ namespace Repository.Entities
         [Required(ErrorMessage = "Category name is required")]
         [StringLength(50, MinimumLength = 2)]
         public string CategoryName { get; set; }
+        public int? AdminID { get; set; }
 
-        public virtual ICollection<Song> Songs { get; set; }
-
+        [ForeignKey("AdminID")]
+        public virtual Admin? Admin { get; set; }
     }
 }

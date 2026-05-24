@@ -32,7 +32,7 @@ public class LyricsProcessor(IVocalSeparatorService separator,
 
     public async Task ProcessAsync(Guid jobId, CancellationToken ct)
     {
-        var job = await _jobRepo.GetByIdAsync(jobId); // שולף job + Song + FilePath
+        var job = await _jobRepo.GetByIdAsync(jobId); //return job + Song + FilePath
         if (job == null) throw new Exception($"Job {jobId} not found");
         string filePath = job.Song.FilePath;
         string? vocalsPath = null;
@@ -100,7 +100,8 @@ public class LyricsProcessor(IVocalSeparatorService separator,
 
             // Step 5: Classify the song into its statistical category
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Classifying);
-            var category = _classificationService.PredictCategory(finalTags);
+
+            var category = _classificationService.PredictCategory(finalTags, job.Song.UploaderID);
 
             // Step 6: Complete the background job and save the results
 
@@ -108,7 +109,7 @@ public class LyricsProcessor(IVocalSeparatorService separator,
             int? categoryId = category?.CategoryID;
 
             await _jobRepo.CompleteJobAsync(jobId);
-            await _songRepo.UpdateSongResultAsync(job.SongID, cleanLyrics, categoryId);
+            await _songRepo.UpdateSongResultAsync(job.SongID, cleanLyrics, categoryId, finalTags);
 
         }
         catch (Exception ex)
@@ -151,35 +152,7 @@ public class LyricsProcessor(IVocalSeparatorService separator,
         }
     }
 
-    private static readonly HashSet<string> HebrewStopwords =
-[
-        // מילות יחס
-        "של", "את", "עם", "על", "אל", "מן", "מ", "ל", "ב", "כ",
-            "לפי", "בגלל", "כדי", "בשביל", "אחרי", "לפני", "בין", "אצל",
-            // מילות חיבור
-            "כי", "אבל", "או", "גם", "רק", "אם", "כש", "כאשר", "אז",
-            "לכן", "אבל", "אלא", "אך", "ואף", "בכל", "שוב",
-            // כינויי גוף
-            "אני", "אתה", "את", "הוא", "היא", "אנחנו", "אתם", "הם", "הן",
-            "אנו", "אותי", "אותך", "אותו", "אותה", "אותנו", "אותם",
-            // מילות שאלה
-            "מה", "מי", "איך", "איפה", "מתי", "למה", "למה", "כמה",
-            // מילים חסרות משמעות
-            "זה", "זאת", "זו", "הזה", "הזאת", "כן", "לא", "כבר",
-            "פתאום", "עוד", "יש", "אין", "היה", "יהיה",
-            // קריאות וצלילים
-            "היי", "ביי", "הו", "אה", "אוי", "אי", "נה", "לה", "אהי",
-            "איי", "הא", "אהה", "ממ", "אממ",
-];
-
-    private static List<string> FilterStopwords(List<string> words)
-    {
-        return words
-            .Where(w => !string.IsNullOrWhiteSpace(w))
-            .Where(w => w.Length > 1)                          // מסנן אותיות בודדות
-            .Where(w => !HebrewStopwords.Contains(w))          // מסנן stopwords
-            .Where(w => System.Text.RegularExpressions.Regex.IsMatch(w, @"[\u0590-\u05FF]")) // רק מילים עם עברית
-            .ToList();
-    }
+   
+   
 }
 

@@ -16,6 +16,7 @@ namespace Repository.Entities
         [StringLength(50)]
         public string TagText { get; set; }
 
+        public virtual ICollection<TagCategory> TagCategories { get; set; }
         public virtual ICollection<SongTagFrequency> TagsFrequencies { get; set; }
     }
 }

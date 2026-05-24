@@ -9,7 +9,7 @@ namespace Repository.Interfaces
 {
     public interface ISongRepository: IRepository<Song>
     {
-        Task UpdateSongResultAsync(int songId, string lyrics, int? categoryId);
+        Task UpdateSongResultAsync(int songId, string lyrics, int? categoryId, Dictionary<Tag, int> finalTags);
         Task<Song> GetSongWithDetails(int id);
         Task<List<Song>> SearchSongs(string query);
 

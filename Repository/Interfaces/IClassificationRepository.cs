@@ -9,7 +9,13 @@ namespace Repository.Interfaces
         /// <summary>
         /// Retrieves all categories from the database, including their related songs.
         /// </summary>
-        List<Category> GetAllCategoriesWithSongs();
+        List<Category> GetAllCategories();
+
+        /// <summary>
+        /// Returns how many songs (system-wide) belong to each category.
+        /// </summary>
+        Dictionary<int, int> GetSongsCountPerCategory();
+
 
         /// <summary>
         /// Gets the total count of songs currently stored in the system.

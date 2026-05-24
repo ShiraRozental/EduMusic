@@ -7,14 +7,19 @@ namespace Service.Interfaces
     {
         // CategoryID -> (TagID -> Frequency)
         Dictionary<int, Dictionary<int, int>> CategoryTagCounts { get; }
-        int VocabularySize { get; }
-        int TotalSongs { get; }
+
+        // Key = CategoryID, Value = How many songs belong to the category
+        Dictionary<int, int> SongsPerCategory { get; }
         List<Category> AllCategories { get; }
 
-        // Method to update the cache when a new song is added
-        void UpdateCacheWithNewSong(int categoryId, List<int> tagIds);
+        int VocabularySize { get; }
+        int TotalSongs { get; }
 
         // Initial load of data from the database
         void Initialize();
+        // Method to update the cache when a new song is added
+        void UpdateCacheWithNewSong(int categoryId, Dictionary<int, int> tagFrequencies);
+
+      
     }
 }

@@ -8,14 +8,21 @@ namespace Repository.Repositories
 {
     public class SongRepository( IContext _context) : ISongRepository
     {
-        public async Task UpdateSongResultAsync(int songId, string lyrics, int? categoryId)
+        public async Task UpdateSongResultAsync(int songId, string lyrics, int? categoryId, Dictionary<Tag, int> finalTags)
         {
+            List<SongTagFrequency> tagFrequencies = finalTags.Select(kv => new SongTagFrequency
+            {
+                SongID = songId,
+                TagID = kv.Key.TagID,
+                Frequency = kv.Value
+            }).ToList();
             var song = await _context.Songs.FindAsync(songId);
             if (song != null)
             {
                 song.RawLyrics = lyrics;
                 song.CategoryID = categoryId;
                 song.Status = SongStatus.Ready;
+                song.TagsFrequencies = tagFrequencies;
                 await _context.Save();
             }
         }
