@@ -9,12 +9,18 @@ namespace Repository.Interfaces
         /// <summary>
         /// Retrieves all categories from the database, including their related songs.
         /// </summary>
-        List<Category> GetAllCategories();
+        List<Category> GetLeafCategories();
 
         /// <summary>
         /// Returns how many songs (system-wide) belong to each category.
         /// </summary>
         Dictionary<int, int> GetSongsCountPerCategory();
+
+        /// <summary>
+        /// Returns all TagCategory records including Frequency.
+        /// Used as the initial seed for CategoryTagCounts.
+        /// </summary>
+        List<TagCategory> GetAllTagCategories();
 
 
         /// <summary>

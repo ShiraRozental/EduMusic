@@ -51,7 +51,10 @@ namespace Repository.Repositories
 
         public async Task<JobState?> GetByIdAsync(Guid id)
         {
-            return await _context.Jobs.FindAsync(id);
+            //return await _context.Jobs.FindAsync(id);
+            return await _context.Jobs
+                    .Include(j => j.Song)
+                    .FirstOrDefaultAsync(j => j.Id == id);
         }
     }
 }

@@ -20,5 +20,7 @@ namespace Repository.Entities
         public int CategoryID { get; set; }
         [ForeignKey("CategoryID")]
         public virtual Category Category { get; set; }
+        [Range(1, int.MaxValue)]
+        public int Frequency { get; set; } = 1;
     }
 }

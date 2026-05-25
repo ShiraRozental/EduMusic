@@ -13,6 +13,7 @@ namespace Repository.Interfaces
         public DbSet<SongTagFrequency> SongTagFrequencies { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<JobState> Jobs { get; set; }
+        public DbSet<TagCategory> TagCategories { get; set; }
 
         public Task Save();
     }

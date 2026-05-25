@@ -10,8 +10,7 @@ namespace Service.Interfaces
 
         // Key = CategoryID, Value = How many songs belong to the category
         Dictionary<int, int> SongsPerCategory { get; }
-        List<Category> AllCategories { get; }
-
+        List<Category> LeafCategories { get; }
         int VocabularySize { get; }
         int TotalSongs { get; }
 

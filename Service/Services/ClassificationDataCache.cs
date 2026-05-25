@@ -18,8 +18,8 @@ public class ClassificationDataCache(IServiceScopeFactory scopeFactory) : IClass
     // Key = CategoryID, Value = How many songs belong to the category
     public Dictionary<int, int> SongsPerCategory { get; private set; } = [];
 
-    // All categories that exist in the system
-    public List<Category> AllCategories { get; private set; } = [];
+    // Only categories that have no children (leaf nodes in the category tree) are used for classification output
+    public List<Category> LeafCategories { get; private set; } = [];
 
     // total distinct tags 
     public int VocabularySize { get; private set; }
@@ -44,9 +44,10 @@ public class ClassificationDataCache(IServiceScopeFactory scopeFactory) : IClass
             var repository = scope.ServiceProvider.GetRequiredService<IClassificationRepository>();
 
             // 1. All categories in the system
-            AllCategories = repository.GetAllCategories();
+            LeafCategories = repository.GetLeafCategories();
 
             // 2. Total songs and per-category song counts (for prior probability)
+
             TotalSongs = repository.GetTotalSongsCount();
             SongsPerCategory = repository.GetSongsCountPerCategory();
 
@@ -54,22 +55,33 @@ public class ClassificationDataCache(IServiceScopeFactory scopeFactory) : IClass
             _allUniqueTags = [.. repository.GetAllTagIds()];
             VocabularySize = _allUniqueTags.Count;
 
-            // 4. CategoryTagCounts: for each category, how many times each tag
-            //    CategoryTagCounts[categoryId][tagId] = total frequency
-            var frequencies = repository.GetSongTagFrequencies();
+            // 4. Step A: seed CategoryTagCounts from TagCategory.Frequency
+            //    Gives every category a starting point before any song is classified.
+            var tagCategories = repository.GetAllTagCategories();
+            foreach (var tc in tagCategories)
+            {
+                if (!CategoryTagCounts.ContainsKey(tc.CategoryID))
+                    CategoryTagCounts[tc.CategoryID] = [];
 
-            CategoryTagCounts = frequencies
-           .AsEnumerable()
-           .Where(stf => stf.Song?.CategoryID != null)
-           .GroupBy(stf => stf.Song.CategoryID!.Value)       // group by category
-           .ToDictionary(
-               g => g.Key,
-               g => g.GroupBy(stf => stf.TagID)              // within category: group by tag
-                     .ToDictionary(
-                         tg => tg.Key,
-                         tg => tg.Sum(stf => stf.Frequency)  // sum all occurrences
-                     )
-           );
+                // Set the manual seed frequency defined by the admin
+                CategoryTagCounts[tc.CategoryID][tc.TagID] = tc.Frequency;
+            }
+
+            // 5. Step B: layer real learned frequencies on top of the seed
+            //    If tag already exists from seed → ADD to it, not replace.
+            var frequencies = repository.GetSongTagFrequencies();
+            foreach (var stf in frequencies.Where(stf => stf.Song?.CategoryID != null))
+            {
+                int catId = stf.Song.CategoryID!.Value;
+
+                if (!CategoryTagCounts.ContainsKey(catId))
+                    CategoryTagCounts[catId] = [];
+
+                if (CategoryTagCounts[catId].ContainsKey(stf.TagID))
+                    CategoryTagCounts[catId][stf.TagID] += stf.Frequency; // add on top of seed
+                else
+                    CategoryTagCounts[catId][stf.TagID] = stf.Frequency;
+            }
         }
         
     }

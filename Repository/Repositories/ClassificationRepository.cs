@@ -12,10 +12,10 @@ public class ClassificationRepository(IContext context) : IClassificationReposit
     /// <summary>
     /// Retrieves all categories from the database, including their related songs.
     /// </summary>
-    public List<Category> GetAllCategories()
+    public List<Category> GetLeafCategories()
     {
         return context.Categories
-            //.Include(c => c.Songs)
+            .Where(c => !context.Categories.Any(child => child.ParentCategoryID == c.CategoryID))
             .AsNoTracking()
             .ToList();
     }
@@ -31,6 +31,17 @@ public class ClassificationRepository(IContext context) : IClassificationReposit
             .Where(s => s.CategoryID != null)
             .GroupBy(s => s.CategoryID!.Value)
             .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    /// <summary>
+    /// Returns all TagCategory records including Frequency.
+    /// Used as the initial seed for CategoryTagCounts.
+    /// </summary>
+    public List<TagCategory> GetAllTagCategories()
+    {
+        return context.TagCategories
+            .AsNoTracking()
+            .ToList();
     }
 
     /// <summary>

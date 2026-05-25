@@ -30,9 +30,9 @@ namespace Service.Services
             if (songTags == null || !songTags.Any())
                 return null;
 
-            var relevantCategories = _cache.AllCategories
-               .Where(c => c.AdminID == null || c.AdminID == adminId)
-               .ToList();
+            var relevantCategories = _cache.LeafCategories
+                .Where(c => c.AdminID == null || c.AdminID == adminId)
+                .ToList();
 
             var categoryScores = new Dictionary<Category, double>();
 

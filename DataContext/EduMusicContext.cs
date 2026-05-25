@@ -17,6 +17,7 @@ namespace EduMusic.DataContext
         public virtual DbSet<SongTagFrequency> SongTagFrequencies { get; set; }
         public virtual DbSet<Category> Categories { get; set; }
         public virtual DbSet<JobState> Jobs { get; set; }
+        public virtual DbSet<TagCategory> TagCategories { get; set; }
 
         public async Task Save()
         {

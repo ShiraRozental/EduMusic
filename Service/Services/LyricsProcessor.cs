@@ -45,7 +45,7 @@ public class LyricsProcessor(IVocalSeparatorService separator,
             //vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
 
            
-
+            vocalsPath = filePath; //for testing only, to skip the vocal separation step
 
             // Step 1: Transcribe audio using Groq Whisper API
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Transcribing);
