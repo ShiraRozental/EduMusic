@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Repository.Entities;
 using Repository.Interfaces;
+using Microsoft.AspNetCore.Hosting;
 using Service.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,8 @@ public class LyricsProcessor(IVocalSeparatorService separator,
                             ITagService tagService,
                             ILogger<LyricsProcessor> logger,
                             INlpClientService nlpClient,
-                            ISongRepository songRepo) : ILyricsProcessor
+                            ISongRepository songRepo,
+                            IWebHostEnvironment environment) : ILyricsProcessor
 {
     private readonly IVocalSeparatorService _separator = separator;
     private readonly IGroqApiClient _groq = groq;
@@ -28,28 +30,30 @@ public class LyricsProcessor(IVocalSeparatorService separator,
     private readonly ILogger<LyricsProcessor> _logger = logger;
     private readonly INlpClientService _nlpClient = nlpClient;
     private readonly ISongRepository _songRepo = songRepo;
-
+    private readonly IWebHostEnvironment _environment = environment;
 
     public async Task ProcessAsync(Guid jobId, CancellationToken ct)
     {
         var job = await _jobRepo.GetByIdAsync(jobId); //return job + Song + FilePath
         if (job == null) throw new Exception($"Job {jobId} not found");
-        string filePath = job.Song.FilePath;
-        string? vocalsPath = null;
+
+        string filePath = Path.Combine(_environment.WebRootPath, job.Song.FilePath);
         try
         {
-            
+
+            string directoryPath = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
 
             //the demucs python server
             //await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SeparatingVocals);
             //vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
 
-           
-            vocalsPath = filePath; //for testing only, to skip the vocal separation step
-
             // Step 1: Transcribe audio using Groq Whisper API
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Transcribing);
-            string rawLyrics = await _groq.TranscribeAsync(vocalsPath, "he", ct);
+            string rawLyrics = await _groq.TranscribeAsync(filePath, "he", ct);
 
 
             // Step 2: Fix transcription and spelling errors using Groq LLM
@@ -64,7 +68,7 @@ public class LyricsProcessor(IVocalSeparatorService separator,
                         5. החזר את הטקסט בלבד, ללא הסברים
                         """;
             string cleanLyrics = await _groq.ChatAsync(fixPrompt, rawLyrics, ct);
-
+            //string cleanLyrics = rawLyrics;
             /*
             // שלב 3: נרמול מילים — קריאה נפרדת, מחזיר רשימה עם כפילויות
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);
@@ -119,16 +123,11 @@ public class LyricsProcessor(IVocalSeparatorService separator,
         }
         finally
         {
-            TryDeleteFile(filePath);
-            if (vocalsPath != null) _separator.CleanupOutput(vocalsPath);
+            _logger.LogInformation("finaly process");
         }
     }
 
-    private void TryDeleteFile(string path)
-    {
-        try { if (File.Exists(path)) File.Delete(path); }
-        catch (Exception ex) { _logger.LogWarning(ex, "Could not delete {Path}", path); }
-    }
+  
 
     private List<string> ParseWordsJson(string json)
     {
