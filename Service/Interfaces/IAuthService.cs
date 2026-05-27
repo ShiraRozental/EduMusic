@@ -9,7 +9,7 @@ namespace Service.Interfaces
 {
     public interface IAuthService
     {
-        Task<AdminDto> RegisterAdmin(AdminRegisterDto registerDto);
+        Task<AuthResponseDto> RegisterAdmin(AdminRegisterDto registerDto);
         Task<AuthResponseDto> LoginAdmin(AdminLoginDto adminLogin);
         Task<AuthResponseDto> LoginUser(UserLoginDto userLogin);
     }

@@ -86,6 +86,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 
+//CLIENT
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp",
+        policy => policy.WithOrigins("http://localhost:5173") // הכתובת של ה-React
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+});
 
 
 var app = builder.Build();
@@ -108,6 +116,8 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+//CLIENT2
+app.UseCors("AllowReactApp");
 
 app.UseMiddleware<EduMusic.Middlewares.ExceptionMiddleware>();
 

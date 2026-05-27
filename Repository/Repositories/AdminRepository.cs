@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using static Common.Exceptions.CustomExceptions;
 
 namespace Repository.Repositories
 {
@@ -15,17 +16,18 @@ namespace Repository.Repositories
 
         public async Task<Admin> AddItem(Admin admin)
         {
-            try
+            var existingAdmin = await _context.Admins.FirstOrDefaultAsync(a => a.AdminID == admin.AdminID);
+
+            if (existingAdmin != null)
             {
-                await _context.Admins.AddAsync(admin);
-                await _context.Save();
-                return admin;
+                throw new ConflictException("תעודת הזהות כבר קיימת במערכת");
             }
-            catch (Exception ex)
-            {
-                throw new Exception($"ERROR DB: {ex.InnerException?.Message ?? ex.Message}");
-            }
+
+            await _context.Admins.AddAsync(admin);
+            await _context.Save();
+            return admin;
         }
+
         public async Task DeleteItem(int id)
         {
             var deleteItem = await _context.Admins.FirstOrDefaultAsync(x => x.AdminID == id);

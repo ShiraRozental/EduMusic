@@ -25,5 +25,9 @@ public class MappingProfile : Profile
         CreateMap<User, UserProvisioningDto>()
                 .ReverseMap();
 
+
+        CreateMap<Song, SongSearchResultDto>()
+                .ForMember(dest => dest.CategoryName,
+                    opt => opt.MapFrom(src => src.Category != null ? src.Category.CategoryName : null));
     }
 }
