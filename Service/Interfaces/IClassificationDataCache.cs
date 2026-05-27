@@ -19,6 +19,7 @@ namespace Service.Interfaces
         // Method to update the cache when a new song is added
         void UpdateCacheWithNewSong(int categoryId, Dictionary<int, int> tagFrequencies);
 
-      
+        void ReassignSong(int oldCategoryId, int newCategoryId, Dictionary<int, int> tagFrequencies);
+
     }
 }

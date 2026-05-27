@@ -1,21 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Common.enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Repository.Entities
 {
-    public enum SongStatus
-    {
-        Pending,          
-        ExtractingLyrics, 
-        Classifying,      
-        Ready,            
-        Failed            
-    }
+    
 
     public class Song
     {

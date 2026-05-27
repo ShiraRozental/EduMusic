@@ -26,11 +26,9 @@ namespace Service.Services
 
             services.AddSingleton<IClassificationDataCache, ClassificationDataCache>();
 
-            // for Dmucs vocal separation and Groq API interactions
-            services.AddScoped<IVocalSeparatorService, VocalSeparatorService>();
-            services.AddHttpClient("DemucsApi", client =>
+            services.AddHttpClient<IVocalSeparatorService, VocalSeparatorService>(client =>
             {
-                client.Timeout = TimeSpan.FromMinutes(5); 
+                client.Timeout = TimeSpan.FromMinutes(10); // הפרדה יכולה לקחת כמה דקות
             });
 
 

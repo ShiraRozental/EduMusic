@@ -8,6 +8,7 @@ namespace EduMusic.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin")]
     public class SongController(ISongService songService) : ControllerBase
     {
 
@@ -18,6 +19,25 @@ namespace EduMusic.Controllers
             int uploaderId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var song = await songService.UploadAndSaveSongAsync(dto, uploaderId);
             return Ok(new { song.SongID, song.Title, song.Status });
+        }
+
+        [HttpPatch("{songId}/category")]
+        [Authorize] 
+        public async Task<IActionResult> ReassignCategory(int songId, [FromBody] int newCategoryId)
+        {
+            int adminId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await songService.ReassignCategoryAsync(songId, newCategoryId, adminId);
+            return NoContent();
+        }
+
+        // GET: api/Song/search
+        [HttpGet("search")]
+        [Authorize]
+        public async Task<IActionResult> Search([FromQuery] string? query,
+                                                [FromQuery] int? categoryId)
+        {
+            var results = await songService.SearchAsync(query, categoryId);
+            return Ok(results);
         }
         /*
         // GET: api/<SongController>

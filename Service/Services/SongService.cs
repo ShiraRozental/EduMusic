@@ -1,4 +1,6 @@
-﻿using Common.Dto;
+﻿using AutoMapper;
+using Common.Dto;
+using Common.enums;
 using Microsoft.AspNetCore.Hosting;
 using Repository.Entities;
 using Repository.Interfaces;
@@ -8,11 +10,14 @@ using System.Diagnostics;
 
 namespace Service.Services
 {
-    public class SongService(IJobRepository jobRepository, ISongRepository songRepository, IWebHostEnvironment environment) :ISongService
+    public class SongService(IClassificationDataCache cache, IJobRepository jobRepository, ISongRepository songRepository, IWebHostEnvironment environment, IMapper mapper) :ISongService
     {
+        private readonly IClassificationDataCache _cache = cache;
         private readonly ISongRepository _songRepository = songRepository;
         private readonly IWebHostEnvironment _environment = environment;
         private readonly IJobRepository _jobRepository = jobRepository;
+        private readonly IMapper _mapper = mapper;
+
 
         public async Task<Song> UploadAndSaveSongAsync(SongUploadDto dto, int uploaderId)
         {
@@ -59,6 +64,33 @@ namespace Service.Services
             });
 
             return song;
+        }
+
+        public async Task ReassignCategoryAsync(int songId, int newCategoryId, int adminId)
+        {
+            var song = await _songRepository.GetByIdWithTagsAsync(songId)
+                ?? throw new Exception($"Song {songId} not found");
+
+            if (song.CategoryID == newCategoryId) return; 
+
+            int oldCategoryId = song.CategoryID
+                ?? throw new Exception("Song has no current category");
+
+            // collect tag frequencies for cache update
+            var tagFrequencies = song.TagsFrequencies
+                .ToDictionary(t => t.TagID, t => t.Frequency);
+
+            // update the song's category in the database
+            await _songRepository.UpdateCategoryAsync(songId, newCategoryId);
+
+            // update the cache to reflect the category change
+            _cache.ReassignSong(oldCategoryId, newCategoryId, tagFrequencies);
+        }
+
+        public async Task<List<SongSearchResultDto>> SearchAsync(string? query, int? categoryId)
+        {
+            var songs = await _songRepository.SearchAsync(query, categoryId);
+            return _mapper.Map<List<SongSearchResultDto>>(songs);
         }
     }
 }

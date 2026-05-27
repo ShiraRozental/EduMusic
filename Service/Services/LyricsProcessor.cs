@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace Service.Services;
 
@@ -41,76 +42,40 @@ public class LyricsProcessor(IVocalSeparatorService separator,
         try
         {
 
-            string directoryPath = Path.GetDirectoryName(filePath);
-            if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException($"Audio file not found: {filePath}");
 
-            //the demucs python server
-            //await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SeparatingVocals);
-            //vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
+            // ── Step 1: Vocal separation ──────────────────────────────────────
+            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SeparatingVocals);
+            string vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
 
-            // Step 1: Transcribe audio using Groq Whisper API
+            // ── Step 2: Transcribe audio using Groq Whisper API────────────────────────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Transcribing);
-            string rawLyrics = await _groq.TranscribeAsync(filePath, "he", ct);
+            string rawLyrics = await _groq.TranscribeAsync(vocalsPath, "he", ct);
 
+            // ── Step 3: Normalize raw text before sending to LLM ─────────────
+            string normalizedRaw = NormalizeHebrewText(rawLyrics);
 
-            // Step 2: Fix transcription and spelling errors using Groq LLM
+            // ── Step 4: Fix spelling and transcription errors via LLM ─────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.FixingLyrics);
-            string fixPrompt = """
-                        אתה עורך שירים עבריים. תפקידך לתקן שגיאות כתיב ותמלול בלבד.
-                        חוקים מחייבים:
-                        1. החזר את השיר המלא - כולל כל החזרות, כל הפזמונים, כל הבתים, בדיוק כמו המקור
-                        2. אל תקצר, אל תמחק חזרות, אל תכתוב "[פזמון חוזר]" או כל קיצור אחר
-                        3. תקן רק שגיאות כתיב ותמלול ברורות
-                        4. שמור על מבנה שורות השיר המקורי
-                        5. החזר את הטקסט בלבד, ללא הסברים
-                        """;
-            string cleanLyrics = await _groq.ChatAsync(fixPrompt, rawLyrics, ct);
-            //string cleanLyrics = rawLyrics;
-            /*
-            // שלב 3: נרמול מילים — קריאה נפרדת, מחזיר רשימה עם כפילויות
-            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);
+            string cleanLyrics = await _groq.ChatAsync(BuildFixPrompt(), normalizedRaw, ct);
 
-            string normalizePrompt = """
-                אתה כלי המרה מורפולוגי לעברית. עבור כל מילה בטקסט:
-                - החזר את צורתה הבסיסית (לֶמָה)
-                - רבים → יחיד: ילדים → ילד
-                - פועל מוטה → שם פועל: ישנתי → לישון, מאיר → להאיר
-                - נסמך → בסיסי: ביתו → בית, שלי → של (השאר כמו שהיא)
-
-                חובה:
-                - עבד כל מילה בטקסט, ללא דילוג
-                - הסר תחיליות דבוקות (ו,ב,ל,כ,מ,ש,ה) מכל מילה לפני הנרמול
-                - שמור על סדר המילים המקורי
-                - שמור כפילויות (מילה שחוזרת תופיע שוב)
-                - החזר JSON בלבד בפורמט: {"words": ["מילה1","מילה2",...]}
-                - אסור להשמיט מילים — גם מילות קישור, גם קריאות, גם כינויי גוף
-                """;
-            string wordsJson = await _groq.ChatAsync(normalizePrompt, cleanLyrics, ct);
-            List<string> allWords = ParseWordsJson(wordsJson);
-
-            List<string> normalizedWords = FilterStopwords(allWords);
-            */
-
-            // Step 3: Extract base words using the dedicated Python NLP service wrapper
+            // ── Step 5: Extract lemmas via Python NLP service ─────────────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);
             Dictionary<string, int> wordCounts = await _nlpClient.NormalizeLyricsAsync(cleanLyrics, ct);
 
-            // Step 4: Clean and synchronize tags with the database via the dedicated tag service
+            // ── Step 6: Sync tags ─────────────────────────────────────────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SynchronizingTags);
             Dictionary<Tag, int> finalTags = await _tagService.ProcessAndSyncTagsAsync(wordCounts);
 
-            // Step 5: Classify the song into its statistical category
+            // ── Step 7: Classify ──────────────────────────────────────────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Classifying);
-
             var category = _classificationService.PredictCategory(finalTags, job.Song.UploaderID);
-
-            // Step 6: Complete the background job and save the results
 
             string categoryName = category?.CategoryName ?? "Unknown";
             int? categoryId = category?.CategoryID;
+
+            // ── Step 8: Persist results ───────────────────────────────────────
 
             await _jobRepo.CompleteJobAsync(jobId);
             await _songRepo.UpdateSongResultAsync(job.SongID, cleanLyrics, categoryId, finalTags);
@@ -123,35 +88,53 @@ public class LyricsProcessor(IVocalSeparatorService separator,
         }
         finally
         {
-            _logger.LogInformation("finaly process");
+            _logger.LogInformation("ProcessAsync finished for job {Id}", jobId);
         }
     }
 
-  
+    // ─── Prompt builder ───────────────────────────────────────────────────────
+    private static string BuildFixPrompt() => """
+         אתה כלי תיקון תמלול לשירים עבריים. קיבלת תמלול גולמי מWhisper שעלול להכיל שגיאות.
+        
+         המשימה שלך: תקן שגיאות כתיב ותמלול בלבד. אל תשנה תוכן.
+        
+         חוקים מחייבים:
+         1. החזר את השיר המלא — כל בית, כל פזמון, כל חזרה, בסדר המקורי
+         2. אל תכתוב [פזמון חוזר] או כל קיצור — כתוב את הטקסט עצמו
+         3. שמור על מבנה השורות המקורי
+         4. החזר טקסט בלבד — ללא כותרות, הסברים או סימני פיסוק מיותרים
+        
+         שגיאות נפוצות שיש לתקן:
+         - החלפת אותיות דומות: א↔ה (מהבהב לא מאבהב), ו↔ב, ח↔כ, ס↔ש, צ↔ס, ט↔ת
+         - מילים דבוקות שצריך להפריד: "שלילדים" → "של ילדים"
+         - מילים מפוצלות שצריך לחבר: "ב כלל" → "בכלל"
+         - ניחוש שגוי של מילה נדירה — אם לא בטוח, השאר כמות שהיא
+         - חזרות שWhisper דילג עליהן — אם הגיון השיר מצריך חזרה, השלם אותה
+        
+         אל תתקן:
+         - סלנג מכוון או מילים מומצאות שנראות כחלק מהשיר
+         - שמות פרטיים
+         - מילים שאתה לא בטוח בהן — עדיף להשאיר מאשר לקלקל
+         """;
 
-    private List<string> ParseWordsJson(string json)
+    // ─── Text normalization ───────────────────────────────────────────────────
+    private static string NormalizeHebrewText(string text)
     {
-        try
-        {
-            string cleaned = System.Text.RegularExpressions.Regex.Replace(
-                json, @"```json?|```", "").Trim();
+        if (string.IsNullOrWhiteSpace(text)) return text;
 
-            using var doc = System.Text.Json.JsonDocument.Parse(cleaned);
-            return doc.RootElement
-                      .GetProperty("words")
-                      .EnumerateArray()
-                      .Select(e => e.GetString() ?? "")
-                      .Where(w => !string.IsNullOrWhiteSpace(w))
-                      .ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to parse words JSON: {Json}", json);
-            return [];
-        }
+        // remove Hebrew diacritics (niqqud) — Stanza handles unvocalized text better
+        text = Regex.Replace(text, @"[\u05B0-\u05C7]", "");
+
+        // collapse 3+ consecutive newlines to double newline (preserve stanza breaks)
+        text = Regex.Replace(text, @"\n{3,}", "\n\n");
+
+        // remove non-Hebrew characters except spaces, newlines, and basic punctuation
+        text = Regex.Replace(text, @"[^\p{IsHebrew}\s\n\r""'-.,!?]", " ");
+        // collapse multiple spaces
+        text = Regex.Replace(text, @" {2,}", " ");
+
+        return text.Trim();
     }
-
-   
-   
+      
 }
 

@@ -11,5 +11,7 @@ namespace Service.Interfaces
     public interface ISongService
     {
         Task<Song> UploadAndSaveSongAsync(SongUploadDto dto, int uploaderId);
+        Task ReassignCategoryAsync(int songId, int newCategoryId, int adminId);
+        Task<List<SongSearchResultDto>> SearchAsync(string? query, int? categoryId);
     }
 }

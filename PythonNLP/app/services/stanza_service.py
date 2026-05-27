@@ -5,7 +5,6 @@ from app.services.stopwords_service import StopWordsService
 
 class StanzaService:
     def __init__(self):
-        # מוריד את המודל בעברית בפעם הראשונה בלבד
         stanza.download(Config.STANZA_LANG)
         self._nlp = stanza.Pipeline(
             Config.STANZA_LANG,
@@ -20,13 +19,29 @@ class StanzaService:
         doc = self._nlp(text)
         words = []
 
+        unknown_words: list[str] = []
+
         for sentence in doc.sentences:
             for word in sentence.words:
-                # לוקח את צורת הבסיס (למה), ואם אין - את המילה המקורית
-                lemma = word.lemma if word.lemma else word.text
+                if word.lemma:
+                    lemma = word.lemma
+                else:
+                    # מתעדים שהמילה לא הוכרה
+                    unknown_words.append(word.text)
+                    lemma = word.text  # fallback to original, but we log it
+
                 if self._stopwords.is_valid(lemma, word.upos):
                     words.append(lemma)
-        return words
+
+                    # log unknown words once per call to avoid flooding
+                if unknown_words:
+                    logger.warning(
+                        "Stanza could not lemmatize %d word(s): %s",
+                        len(unknown_words),
+                        ", ".join(unknown_words[:20])  # cap at 20 to avoid huge log lines
+                    )
+
+                return words
 
 
 # Singleton - נטען פעם אחת בלבד בהפעלת השרת

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Common.enums;
+using Microsoft.EntityFrameworkCore;
 using Repository.Entities;
 using Repository.Interfaces;
 using System.Linq.Expressions;
@@ -81,10 +82,29 @@ namespace Repository.Repositories
                 .FirstOrDefaultAsync(s => s.SongID == id);
         }
 
-        public async Task<List<Song>> SearchSongs(string query)
+        public async Task<List<Song>> SearchAsync(string? query, int? categoryId)
         {
-            return await _context.Songs
-                .Where(s => s.Title.Contains(query) || s.Artist.Contains(query) || s.RawLyrics.Contains(query) || s.Category.CategoryName.Contains(query))
+            var q = _context.Songs
+                .Include(s => s.Category)
+                .Include(s => s.TagsFrequencies)
+                    .ThenInclude(tf => tf.Tag)
+                .AsQueryable();
+
+            if (categoryId.HasValue)
+                q = q.Where(s => s.CategoryID == categoryId);
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                string term = query.ToLower();
+                q = q.Where(s =>
+                    s.Title.ToLower().Contains(term) ||
+                    s.Artist.ToLower().Contains(term) ||
+                    s.Category.CategoryName.ToLower().Contains(term) ||
+                    s.TagsFrequencies.Any(tf => tf.Tag.TagText.ToLower().Contains(term)));
+            }
+
+            return await q
+                .AsNoTracking()
                 .ToListAsync();
         }
 
@@ -93,6 +113,22 @@ namespace Repository.Repositories
             return await _context.Songs
                 .Where(s => s.CategoryID == categoryId)
                 .ToListAsync();
+        }
+
+        public async Task<Song?> GetByIdWithTagsAsync(int songId)
+        {
+            return await _context.Songs
+                .Include(s => s.TagsFrequencies)
+                .FirstOrDefaultAsync(s => s.SongID == songId);
+        }
+
+        public async Task UpdateCategoryAsync(int songId, int newCategoryId)
+        {
+            var song = await _context.Songs.FindAsync(songId);
+            if (song == null) return;
+
+            song.CategoryID = newCategoryId;
+            await _context.Save();
         }
     }
 }

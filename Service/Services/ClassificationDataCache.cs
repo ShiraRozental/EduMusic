@@ -128,4 +128,45 @@ public class ClassificationDataCache(IServiceScopeFactory scopeFactory) : IClass
             }
         }
     }
+
+    public void ReassignSong(int oldCategoryId, int newCategoryId, Dictionary<int, int> tagFrequencies)
+    {
+        // 1. Update SongsPerCategory counts for both old and new categories
+        if (SongsPerCategory.ContainsKey(oldCategoryId))
+            SongsPerCategory[oldCategoryId] = Math.Max(0, SongsPerCategory[oldCategoryId] - 1);
+
+        if (SongsPerCategory.ContainsKey(newCategoryId))
+            SongsPerCategory[newCategoryId]++;
+        else
+            SongsPerCategory[newCategoryId] = 1;
+
+        // 2. moving tags from old category to new category
+        if (CategoryTagCounts.TryGetValue(oldCategoryId, out var oldTags))
+        {
+            foreach (var (tagId, freq) in tagFrequencies)
+            {
+                if (oldTags.ContainsKey(tagId))
+                {
+                    oldTags[tagId] = Math.Max(0, oldTags[tagId] - freq);
+                    if (oldTags[tagId] == 0)
+                        oldTags.Remove(tagId);
+                }
+            }
+        }
+
+        // adding tags to the new category
+        if (!CategoryTagCounts.ContainsKey(newCategoryId))
+            CategoryTagCounts[newCategoryId] = [];
+
+        var newTags = CategoryTagCounts[newCategoryId];
+        foreach (var (tagId, freq) in tagFrequencies)
+        {
+            if (newTags.ContainsKey(tagId))
+                newTags[tagId] += freq;
+            else
+                newTags[tagId] = freq;
+
+            // VocabularySize dont change here because the tag already exists in the system, just moved between categories
+        }
+    }
 }

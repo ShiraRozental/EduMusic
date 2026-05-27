@@ -1,2 +1,3 @@
 flask
 stanza
+audio-separator[cpu]
