@@ -8,13 +8,14 @@ using Repository.Interfaces;
 using Service.Interfaces;
 using Service.Services;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
+builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 //connectionSQL
 var connectionString = builder.Configuration.GetConnectionString("database-home");
 
@@ -90,11 +91,21 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
-        policy => policy.WithOrigins("http://localhost:5173") // הכתובת של ה-React
+        policy => policy.WithOrigins("http://localhost:5173") 
                         .AllowAnyMethod()
                         .AllowAnyHeader());
 });
 
+// הגדלת מגבלת גודל קבצים
+builder.Services.Configure<IISServerOptions>(options =>
+{
+    options.MaxRequestBodySize = 500_000_000; // 500MB
+});
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 500_000_000; // 500MB
+});
 
 var app = builder.Build();
 //WWWROOT

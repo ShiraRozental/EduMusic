@@ -1,4 +1,5 @@
 ﻿using Common.Dto;
+using Microsoft.AspNetCore.Http;
 using Repository.Entities;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,11 @@ namespace Service.Interfaces
     {
         Task<Song> UploadAndSaveSongAsync(SongUploadDto dto, int uploaderId);
         Task ReassignCategoryAsync(int songId, int newCategoryId, int adminId);
-        Task<List<SongSearchResultDto>> SearchAsync(string? query, int? categoryId);
+        Task<List<SongSearchResultDto>> SearchAsync(string? title, string? artist, int? categoryId, int? tagId);
+        Task<Song?> GetSongByIdAsync(int songId);
+        Task<List<TagDto>> GetAllTagsAsync();
+        Task<bool> DeleteSongAsync(int songId);
+        Task<List<Song>> UploadMultipleSongsAsync(List<IFormFile> files, int uploaderId);
+
     }
 }

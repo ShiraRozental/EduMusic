@@ -50,22 +50,37 @@ public class AuthService(IUserRepository userRepo, IAdminRepository adminRepo, I
             Token = token,
             User = _mapper.Map<UserDto>(user),
             Role = "User",
-            FullName = $"User: {user.ID}"
+            FullName = user.FullNameUser
+
         };
     }
 
     public async Task<AuthResponseDto> RegisterAdmin(AdminRegisterDto registerDto)
     {
         var existingByEmail = await _adminRepo.GetAdminByEmail(registerDto.Email);
-
         if (existingByEmail != null)
             throw new ConflictException("An administrator with this email already exists.");
 
-        var admin = _mapper.Map<Admin>(registerDto);
-        admin.Password = BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
         
-        //409
+        var existingUser = await _userRepo.GetById(int.Parse(registerDto.ID));
+        if (existingUser != null)
+            throw new ConflictException("A user with this identity number already exists.");
+
+        var hashedPassword = BCrypt.Net.BCrypt.HashPassword(registerDto.Password);
+
+        var admin = _mapper.Map<Admin>(registerDto);
+        admin.Password = hashedPassword;
+
         var newAdmin = await _adminRepo.AddItem(admin);
+
+        var user = new User
+        {
+            ID = registerDto.ID,                
+            FullNameUser = registerDto.FullName, 
+            MyTeacherID = newAdmin.AdminID      
+        };
+
+        await _userRepo.AddItem(user);
 
         return new AuthResponseDto
         {

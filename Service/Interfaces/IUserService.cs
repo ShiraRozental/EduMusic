@@ -13,5 +13,8 @@ namespace Service.Interfaces
         Task ImportUsersFromExcelAsync(IFormFile file, int teacherId);
 
         Task AddUsersManualAsync(IEnumerable<UserProvisioningDto> dtos, int teacherId);
+
+        Task<IEnumerable<UserDto>> GetAllUsersAsync(int teacherId);
+        Task DeleteUserAsync(int userId);
     }
 }

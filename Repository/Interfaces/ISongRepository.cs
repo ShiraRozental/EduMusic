@@ -11,8 +11,7 @@ namespace Repository.Interfaces
     {
         Task UpdateSongResultAsync(int songId, string lyrics, int? categoryId, Dictionary<Tag, int> finalTags);
         Task<Song> GetSongWithDetails(int id);
-        Task<List<Song>> SearchAsync(string? query, int? categoryId);
-        Task<List<Song>> GetSongsByCategory(int categoryId);
+        Task<List<Song>> SearchAsync(string? title, string? artist, int? categoryId, int? tagId); Task<List<Song>> GetSongsByCategory(int categoryId);
         Task<Song?> GetByIdWithTagsAsync(int songId);
         Task UpdateCategoryAsync(int songId, int newCategoryId);
     }

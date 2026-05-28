@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using Common.enums;
 
 namespace Service.Services;
 
@@ -45,9 +46,12 @@ public class LyricsProcessor(IVocalSeparatorService separator,
             if (!File.Exists(filePath))
                 throw new FileNotFoundException($"Audio file not found: {filePath}");
 
+            job.Song.Status = SongStatus.ExtractingLyrics;
             // ── Step 1: Vocal separation ──────────────────────────────────────
-            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SeparatingVocals);
-            string vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
+            //await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SeparatingVocals);
+            //string vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
+
+            string vocalsPath = filePath;
 
             // ── Step 2: Transcribe audio using Groq Whisper API────────────────────────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Transcribing);
@@ -59,6 +63,8 @@ public class LyricsProcessor(IVocalSeparatorService separator,
             // ── Step 4: Fix spelling and transcription errors via LLM ─────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.FixingLyrics);
             string cleanLyrics = await _groq.ChatAsync(BuildFixPrompt(), normalizedRaw, ct);
+
+            job.Song.Status = SongStatus.Classifying;
 
             // ── Step 5: Extract lemmas via Python NLP service ─────────────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);

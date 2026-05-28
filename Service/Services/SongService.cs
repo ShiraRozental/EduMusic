@@ -2,21 +2,24 @@
 using Common.Dto;
 using Common.enums;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Repository.Entities;
 using Repository.Interfaces;
+using Repository.Repositories;
 using Service.Interfaces;
 using System.Diagnostics;
 
 
 namespace Service.Services
 {
-    public class SongService(IClassificationDataCache cache, IJobRepository jobRepository, ISongRepository songRepository, IWebHostEnvironment environment, IMapper mapper) :ISongService
+    public class SongService(ITagRepository tagRepository , IClassificationDataCache cache, IJobRepository jobRepository, ISongRepository songRepository, IWebHostEnvironment environment, IMapper mapper) :ISongService
     {
         private readonly IClassificationDataCache _cache = cache;
         private readonly ISongRepository _songRepository = songRepository;
         private readonly IWebHostEnvironment _environment = environment;
         private readonly IJobRepository _jobRepository = jobRepository;
         private readonly IMapper _mapper = mapper;
+        private readonly ITagRepository _tagRepository = tagRepository;
 
 
         public async Task<Song> UploadAndSaveSongAsync(SongUploadDto dto, int uploaderId)
@@ -87,10 +90,39 @@ namespace Service.Services
             _cache.ReassignSong(oldCategoryId, newCategoryId, tagFrequencies);
         }
 
-        public async Task<List<SongSearchResultDto>> SearchAsync(string? query, int? categoryId)
+        public async Task<List<SongSearchResultDto>> SearchAsync(string? title, string? artist, int? categoryId, int? tagId)
         {
-            var songs = await _songRepository.SearchAsync(query, categoryId);
+            var songs = await _songRepository.SearchAsync(title, artist, categoryId, tagId);
             return _mapper.Map<List<SongSearchResultDto>>(songs);
+        }
+
+        public async Task<List<TagDto>> GetAllTagsAsync()
+        {
+            var tags = await _tagRepository.GetAll();
+            return _mapper.Map<List<TagDto>>(tags);
+        }
+        public async Task<Song?> GetSongByIdAsync(int songId)
+        {
+            return await _songRepository.GetById(songId);
+        }
+
+        public async Task<bool> DeleteSongAsync(int songId)
+        {
+            var song = await _songRepository.GetById(songId);
+            if (song == null) return false;
+            await _songRepository.DeleteItem(songId);
+            return true;
+        }
+
+        public async Task<List<Song>> UploadMultipleSongsAsync(List<IFormFile> files, int uploaderId)
+        {
+            var tasks = files.Select(file =>
+            {
+                var dto = new SongUploadDto { SongFile = file };
+                return UploadAndSaveSongAsync(dto, uploaderId);
+            });
+            var results = await Task.WhenAll(tasks);
+            return results.ToList();
         }
     }
 }

@@ -28,10 +28,6 @@ namespace EduMusic.DataContext
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Song>()
-                .HasIndex(s => s.RawLyrics)
-                .HasDatabaseName("Index_Lyrics");
-
             modelBuilder.Entity<Admin>()
                 .HasIndex(a => a.Email)
                 .IsUnique();

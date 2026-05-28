@@ -21,7 +21,8 @@ namespace Repository.Entities
 
         [Required]
         public string FilePath { get; set; }
-        
+
+        [Column(TypeName = "nvarchar(max)")]
         public string? RawLyrics { get; set; }
 
         public int Duration { get; set; }

@@ -10,6 +10,7 @@ namespace Common.Dto
         public string Title { get; set; }
         public string? Artist { get; set; }
         public int Duration { get; set; }
+        public int? CategoryID { get; set; }
         public string? CategoryName { get; set; }
         public SongStatus Status { get; set; }
         public string FilePath { get; set; }

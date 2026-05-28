@@ -141,7 +141,7 @@ namespace DataContext.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RawLyrics")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -160,9 +160,6 @@ namespace DataContext.Migrations
                     b.HasKey("SongID");
 
                     b.HasIndex("CategoryID");
-
-                    b.HasIndex("RawLyrics")
-                        .HasDatabaseName("Index_Lyrics");
 
                     b.HasIndex("UploaderID");
 

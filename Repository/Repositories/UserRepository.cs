@@ -20,6 +20,12 @@ namespace Repository.Repositories
             return user;
         }
 
+        public async Task<User?> GetUserByIdentityCard(string identityId)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.ID == identityId);
+        }
+
         public async Task AddUsersRangeAsync(IEnumerable<User> users)
         {
             await _context.Users.AddRangeAsync(users);

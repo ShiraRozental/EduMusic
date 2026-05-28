@@ -11,6 +11,6 @@ namespace Repository.Interfaces
     {
         Task<Admin?> GetAdminForUser(int userId);
         Task AddUsersRangeAsync(IEnumerable<User> users);
-
+        Task<User?> GetUserByIdentityCard(string identityId);
     }
 }

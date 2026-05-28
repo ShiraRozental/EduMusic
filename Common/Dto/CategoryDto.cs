@@ -11,9 +11,9 @@ namespace Common.Dto
     {
         [Required]
         public int CategoryID { get; set; }
-
         [Required]
         public string CategoryName { get; set; }
+        public int? ParentCategoryID { get; set; }
     }
         
 }

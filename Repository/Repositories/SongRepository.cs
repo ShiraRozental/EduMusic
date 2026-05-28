@@ -82,30 +82,42 @@ namespace Repository.Repositories
                 .FirstOrDefaultAsync(s => s.SongID == id);
         }
 
-        public async Task<List<Song>> SearchAsync(string? query, int? categoryId)
+        public async Task<List<Song>> SearchAsync(string? title, string? artist, int? categoryId, int? tagId)
         {
-            var q = _context.Songs
+            // 1. מתחילים משאילתה בסיסית וטוענים את ה-Category (בשביל ה-CategoryName ב-DTO)
+            var queryable = _context.Songs
                 .Include(s => s.Category)
-                .Include(s => s.TagsFrequencies)
-                    .ThenInclude(tf => tf.Tag)
                 .AsQueryable();
 
-            if (categoryId.HasValue)
-                q = q.Where(s => s.CategoryID == categoryId);
-
-            if (!string.IsNullOrWhiteSpace(query))
+            // 2. סינון לפי שם השיר (אם המשתמש הקליד משהו)
+            if (!string.IsNullOrWhiteSpace(title))
             {
-                string term = query.ToLower();
-                q = q.Where(s =>
-                    s.Title.ToLower().Contains(term) ||
-                    s.Artist.ToLower().Contains(term) ||
-                    s.Category.CategoryName.ToLower().Contains(term) ||
-                    s.TagsFrequencies.Any(tf => tf.Tag.TagText.ToLower().Contains(term)));
+                queryable = queryable.Where(s => s.Title.Contains(title));
             }
 
-            return await q
-                .AsNoTracking()
-                .ToListAsync();
+            // 3. סינון לפי שם האומן
+            if (!string.IsNullOrWhiteSpace(artist))
+            {
+                queryable = queryable.Where(s => s.Artist != null && s.Artist.Contains(artist));
+            }
+
+            // 4. סינון לפי קטגוריה (אם נבחרה קטגוריה מה-Dropdown)
+            if (categoryId.HasValue)
+            {
+                queryable = queryable.Where(s => s.CategoryID == categoryId.Value);
+            }
+
+            // 5. סינון לפי תגית (אם נבחרה תגית מתוך ה-Autocomplete)
+            if (tagId.HasValue)
+            {
+                queryable = queryable.Where(s => s.TagsFrequencies.Any(tf => tf.TagID == tagId.Value));
+            }
+
+            // 6. מיון כרונולוגי - השירים החדשים ביותר שהועלו יופיעו ראשונים
+            queryable = queryable.OrderByDescending(s => s.UploadDate);
+
+            // 7. ביצוע השאילתה בפועל מול ה-DB והחזרת רשימת הישויות
+            return await queryable.ToListAsync();
         }
 
         public async Task<List<Song>> GetSongsByCategory(int categoryId)

@@ -23,12 +23,13 @@ namespace Service.Services
             services.AddScoped<ILyricsProcessor, LyricsProcessor>();
             services.AddScoped<ITagService, TagService>();
             services.AddScoped<ISongService, SongService>();
+            services.AddScoped<ICategoryService, CategoryService>();
 
             services.AddSingleton<IClassificationDataCache, ClassificationDataCache>();
 
             services.AddHttpClient<IVocalSeparatorService, VocalSeparatorService>(client =>
             {
-                client.Timeout = TimeSpan.FromMinutes(10); // הפרדה יכולה לקחת כמה דקות
+                client.Timeout = TimeSpan.FromMinutes(10); 
             });
 
 

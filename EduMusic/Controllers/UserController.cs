@@ -1,43 +1,56 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿using Common.Dto;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Service.Interfaces;
+using System.Security.Claims;
 
 namespace EduMusic.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin")]
     public class UserController : ControllerBase
     {
-        // GET: api/<UserController>
+        private readonly IUserService _userService;
+
+        public UserController(IUserService userService)
+        {
+            _userService = userService;
+        }
+
+        // GET /api/User
         [HttpGet]
-        public IEnumerable<string> Get()
+        public async Task<IActionResult> GetAll()
         {
-            return new string[] { "value1", "value2" };
+            int teacherId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var users = await _userService.GetAllUsersAsync(teacherId);
+            return Ok(users);
         }
 
-        // GET api/<UserController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST api/<UserController>
+        // POST /api/User
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async Task<IActionResult> AddManual([FromBody] IEnumerable<UserProvisioningDto> dtos)
         {
+            int teacherId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await _userService.AddUsersManualAsync(dtos, teacherId);
+            return Ok();
         }
 
-        // PUT api/<UserController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<UserController>/5
+        // DELETE /api/User/{id}
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
+            await _userService.DeleteUserAsync(id);
+            return NoContent();
+        }
+
+        // POST /api/User/import-excel
+        [HttpPost("import-excel")]
+        public async Task<IActionResult> ImportExcel(IFormFile file)
+        {
+            int teacherId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await _userService.ImportUsersFromExcelAsync(file, teacherId);
+            return Ok();
         }
     }
 }
