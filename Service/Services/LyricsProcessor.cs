@@ -48,10 +48,8 @@ public class LyricsProcessor(IVocalSeparatorService separator,
 
             job.Song.Status = SongStatus.ExtractingLyrics;
             // ── Step 1: Vocal separation ──────────────────────────────────────
-            //await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SeparatingVocals);
-            //string vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
-
-            string vocalsPath = filePath;
+            await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SeparatingVocals);
+            string vocalsPath = await _separator.SeparateVocalsAsync(filePath, ct);
 
             // ── Step 2: Transcribe audio using Groq Whisper API────────────────────────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.Transcribing);
@@ -68,7 +66,7 @@ public class LyricsProcessor(IVocalSeparatorService separator,
 
             // ── Step 5: Extract lemmas via Python NLP service ─────────────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.NormalizingWords);
-            Dictionary<string, int> wordCounts = await _nlpClient.NormalizeLyricsAsync(cleanLyrics, ct);
+            Dictionary<string, int> wordCounts = await _nlpClient.NormalizeLyricsAsync(normalizedRaw, ct);
 
             // ── Step 6: Sync tags ─────────────────────────────────────────────
             await _jobRepo.UpdateStatusAsync(jobId, JobStatus.SynchronizingTags);
@@ -84,7 +82,7 @@ public class LyricsProcessor(IVocalSeparatorService separator,
             // ── Step 8: Persist results ───────────────────────────────────────
 
             await _jobRepo.CompleteJobAsync(jobId);
-            await _songRepo.UpdateSongResultAsync(job.SongID, cleanLyrics, categoryId, finalTags);
+            await _songRepo.UpdateSongResultAsync(job.SongID, normalizedRaw, categoryId, finalTags);
 
         }
         catch (Exception ex)

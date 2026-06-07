@@ -74,20 +74,30 @@ namespace Service.Services
             var song = await _songRepository.GetByIdWithTagsAsync(songId)
                 ?? throw new Exception($"Song {songId} not found");
 
-            if (song.CategoryID == newCategoryId) return; 
+            if (song.CategoryID == newCategoryId) return;
 
-            int oldCategoryId = song.CategoryID
-                ?? throw new Exception("Song has no current category");
+            // שומרים את הקטגוריה הישנה (יכולה להיות null)
+            int? oldCategoryId = song.CategoryID;
 
-            // collect tag frequencies for cache update
+            // אוספים את תדירויות התגיות של השיר לדיקשנרי
             var tagFrequencies = song.TagsFrequencies
                 .ToDictionary(t => t.TagID, t => t.Frequency);
 
-            // update the song's category in the database
+            // עדכון הקטגוריה בבסיס הנתונים
             await _songRepository.UpdateCategoryAsync(songId, newCategoryId);
 
-            // update the cache to reflect the category change
-            _cache.ReassignSong(oldCategoryId, newCategoryId, tagFrequencies);
+            // עדכון ה-Cache בצורה חכמה על פי המצב הקודם
+            if (oldCategoryId.HasValue)
+            {
+                // תרחיש 1: לשיר הייתה קטגוריה, מעבירים אותה מהישנה לחדשה
+                _cache.ReassignSong(oldCategoryId.Value, newCategoryId, tagFrequencies);
+            }
+            else
+            {
+                // תרחיש 2: לשיר לא הייתה קטגוריה (היה null). 
+                // משתמשים במתודה הקיימת שלך שפשוט מוסיפה את נתוני השיר לקטגוריה החדשה ומעדכנת מונים
+                _cache.UpdateCacheWithNewSong(newCategoryId, tagFrequencies);
+            }
         }
 
         public async Task<List<SongSearchResultDto>> SearchAsync(string? title, string? artist, int? categoryId, int? tagId)
